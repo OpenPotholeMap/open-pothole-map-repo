@@ -6,13 +6,13 @@
   "scripts": {
     "start:frontend": "cd frontend && npm run dev",
     "start:backend": "cd backend && npm run dev",
-    "start": "npm-run-all --parallel start:frontend start:backend"
+    "start": "concurrently --kill-others-on-fail \"npm run start:frontend\" \"npm run start:backend\""
   },
   "workspaces": [
     "frontend",
     "backend"
   ],
   "devDependencies": {
-    "npm-run-all": "^4.1.5"
+    "concurrently": "^9.2.1"
   }
 }
