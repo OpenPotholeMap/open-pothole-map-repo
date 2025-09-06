@@ -1,15 +1,9 @@
-import express from 'express';
-import cors from 'cors';
+import app from './app.js';
 import envConfig from './config/envs.js';
+import { connectDB } from './config/database.js';
 
-const app = express();
-
-// Simple CORS setup
-app.use(cors());
-
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Connect to database
+await connectDB(envConfig.mongoUri);
 
 // Start server
 app.listen(envConfig.port, () => {
