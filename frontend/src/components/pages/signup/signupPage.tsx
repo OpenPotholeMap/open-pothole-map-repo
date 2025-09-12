@@ -5,41 +5,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export const LoginPage = () => {
+export const SignupPage = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignup = async () => {
     setIsLoading(true)
     setError("")
     
     try {
-      // TODO: Implement Google OAuth login
-      console.log("Google login clicked")
-      // Simulate successful login for now
-      navigate("/")
+      // TODO: Implement Google OAuth signup
+      console.log("Google signup clicked")
+      // Simulate successful signup for now
+      navigate("/login")
     } catch (err) {
-      setError("Google login failed. Please try again.")
+      setError("Google signup failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
     try {
-      // TODO: Implement email login
-      console.log("Email login:", { email, password })
-      // Simulate successful login for now
-      navigate("/")
+      // TODO: Implement email signup
+      console.log("Email signup:", { email, password })
+      // Simulate successful signup for now
+      navigate("/login")
     } catch (err) {
-      setError("Login failed. Please check your credentials.")
+      setError("Signup failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -50,17 +50,17 @@ export const LoginPage = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            Sign in to your account
+            Create an account
           </CardTitle>
           <CardDescription className="text-center">
-            Enter your email below to sign in to your account
+            Enter your email below to create your account
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
             variant="outline"
             className="w-full"
-            onClick={handleGoogleLogin}
+            onClick={handleGoogleSignup}
             disabled={isLoading}
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -101,7 +101,7 @@ export const LoginPage = () => {
             </div>
           )}
 
-          <form onSubmit={handleEmailLogin} className="space-y-4">
+          <form onSubmit={handleEmailSignup} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -124,14 +124,14 @@ export const LoginPage = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Creating account..." : "Create account"}
             </Button>
           </form>
 
           <div className="text-center text-sm">
-            Don't have an account?{" "}
-            <Link to="/signup" className="underline">
-              Sign up
+            Already have an account?{" "}
+            <Link to="/login" className="underline">
+              Sign in
             </Link>
           </div>
         </CardContent>
@@ -139,4 +139,3 @@ export const LoginPage = () => {
     </div>
   )
 }
-
