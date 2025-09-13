@@ -1,11 +1,19 @@
+import { z } from "zod";
+import dotenv from "dotenv";
 
-import dotenv from 'dotenv';
+dotenv.config();
 
-dotenv.config()
+// Define schema for env variables
+const envSchema = z.object({
+  PORT: z.string().default("5000"),
+  MONGO_URI: z.string().default("mongodb://localhost:27017/myapp"),
+  JWT_SECRET: z.string().default("your_jwt_secret_key"),
+});
 
-const envConfig = {
-    port: process.env.PORT ? parseInt(process.env.PORT) : 8000,
-    mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/mydatabase',
-}
+// Validate process.env directly
+const env = envSchema.parse(process.env);
 
-export default envConfig;
+// Export typed values
+export const PORT = env.PORT;
+export const MONGO_URI = env.MONGO_URI;
+export const JWT_SECRET = env.JWT_SECRET;
