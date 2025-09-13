@@ -1,11 +1,11 @@
-import app from './app.js';
-import envConfig from './config/envs.js';
-import { connectDB } from './config/database.js';
+import app from "@/app";
+import { connectDB } from "@/config/database";
+import { PORT } from "@/config/envs";
 
 // Connect to database
-await connectDB(envConfig.mongoUri);
+await connectDB();
 
 // Start server
-app.listen(envConfig.port, () => {
-  console.log(`Server running on port ${envConfig.port}`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
