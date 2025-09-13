@@ -1,49 +1,108 @@
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+import { useState } from "react";
+import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../../../config/firebase";
+import { GoogleAuthProvider } from "firebase/auth/web-extension";
+import axios from "axios";
 
 export const LoginPage = () => {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const navigate = useNavigate()
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true)
-    setError("")
-    
+    setIsLoading(true);
+    setError("");
+
     try {
       // TODO: Implement Google OAuth login
-      console.log("Google login clicked")
+      console.log("Google login clicked");
       // Simulate successful login for now
-      navigate("/")
+      navigate("/");
     } catch (err) {
-      setError("Google login failed. Please try again.")
+      setError("Google login failed. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     try {
       // TODO: Implement email login
-      console.log("Email login:", { email, password })
+      console.log("Email login:", { email, password });
       // Simulate successful login for now
-      navigate("/")
+      navigate("/");
     } catch (err) {
-      setError("Login failed. Please check your credentials.")
+      setError("Login failed. Please check your credentials.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
+  const [tasks, setTasks] = useState([]);
+
+  const [authorizedUser, setAuthorizedUser] = useState<boolean>(
+    !!sessionStorage.getItem("accessToken")
+  );
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const signInWithEmailAndPassword = async () => {
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error("Error signing in:", error);
+    }
+  };
+
+  const signInWithGoogle = async () =>
+    await signInWithPopup(auth, googleProvider)
+      .then((result) => {
+        // This gives a Google Access Token, which can be used to access the Google API.
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        const token = credential?.accessToken;
+
+        // The signed-in user info.
+        const user = result.user;
+        if (user) {
+          user.getIdToken().then((tkn) => {
+            // set access token in session storage
+            sessionStorage.setItem("accessToken", tkn);
+            setAuthorizedUser(true);
+          });
+        }
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        const credential = GoogleAuthProvider.credentialFromError(error);
+      });
+
+  const fetchData = async (token: string) => {
+    const response = await axios.get("http://localhost:5000/api/tasks", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    setTasks(response.data.tasks);
+    console.log(response.data);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -61,8 +120,7 @@ export const LoginPage = () => {
             variant="outline"
             className="w-full"
             onClick={handleGoogleLogin}
-            disabled={isLoading}
-          >
+            disabled={isLoading}>
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
@@ -137,6 +195,5 @@ export const LoginPage = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

@@ -1,9 +1,9 @@
-import './App.css'
-import { Route, BrowserRouter as Routers, Routes } from 'react-router-dom'
-import HomePage from './components/pages/home/homePage'
-import { LoginPage } from './components/pages/login/loginPage'
-import { SignupPage } from './components/pages/signup/signupPage'
-import { ThemeProvider } from './contexts/theme-context'
+import "@/App.css";
+import { Route, BrowserRouter as Routers, Routes } from "react-router-dom";
+import HomePage from "@/components/pages/home/homePage";
+import { LoginPage } from "@/components/pages/auth/loginPage";
+import { SignupPage } from "@/components/pages/auth/signupPage";
+import { ThemeProvider } from "@/contexts/theme-context";
 
 export const App = () => {
   return (
@@ -16,7 +16,7 @@ export const App = () => {
         </Routes>
       </Routers>
     </ThemeProvider>
-  )
-}
+  );
+};
 
-export default App
+export default App;
