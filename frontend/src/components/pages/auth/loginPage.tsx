@@ -11,10 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../../../config/firebase";
-import { GoogleAuthProvider } from "firebase/auth/web-extension";
-import axios from "axios";
+// import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+// import { auth, googleProvider } from "../../../config/firebase";
+// import { GoogleAuthProvider } from "firebase/auth/web-extension";
+// import axios from "axios";
 
 export const LoginPage = () => {
   const [error, setError] = useState("");
@@ -54,55 +54,55 @@ export const LoginPage = () => {
     }
   };
 
-  const [tasks, setTasks] = useState([]);
+  // const [tasks, setTasks] = useState([]);
 
-  const [authorizedUser, setAuthorizedUser] = useState<boolean>(
-    !!sessionStorage.getItem("accessToken")
-  );
+  // const [authorizedUser, setAuthorizedUser] = useState<boolean>(
+  //   !!sessionStorage.getItem("accessToken")
+  // );
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const signInWithEmailAndPassword = async () => {
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-      console.error("Error signing in:", error);
-    }
-  };
+  // const signInWithEmailAndPassword = async () => {
+  //   try {
+  //     await createUserWithEmailAndPassword(auth, email, password);
+  //   } catch (error) {
+  //     console.error("Error signing in:", error);
+  //   }
+  // };
 
-  const signInWithGoogle = async () =>
-    await signInWithPopup(auth, googleProvider)
-      .then((result) => {
-        // This gives a Google Access Token, which can be used to access the Google API.
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        const token = credential?.accessToken;
+  // const signInWithGoogle = async () =>
+  //   await signInWithPopup(auth, googleProvider)
+  //     .then((result) => {
+  //       // This gives a Google Access Token, which can be used to access the Google API.
+  //       const credential = GoogleAuthProvider.credentialFromResult(result);
+  //       const token = credential?.accessToken;
 
-        // The signed-in user info.
-        const user = result.user;
-        if (user) {
-          user.getIdToken().then((tkn) => {
-            // set access token in session storage
-            sessionStorage.setItem("accessToken", tkn);
-            setAuthorizedUser(true);
-          });
-        }
-      })
-      .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        const credential = GoogleAuthProvider.credentialFromError(error);
-      });
+  //       // The signed-in user info.
+  //       const user = result.user;
+  //       if (user) {
+  //         user.getIdToken().then((tkn) => {
+  //           // set access token in session storage
+  //           sessionStorage.setItem("accessToken", tkn);
+  //           setAuthorizedUser(true);
+  //         });
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       const errorCode = error.code;
+  //       const errorMessage = error.message;
+  //       const credential = GoogleAuthProvider.credentialFromError(error);
+  //     });
 
-  const fetchData = async (token: string) => {
-    const response = await axios.get("http://localhost:5000/api/tasks", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    setTasks(response.data.tasks);
-    console.log(response.data);
-  };
+  // const fetchData = async (token: string) => {
+  //   const response = await axios.get("http://localhost:5000/api/tasks", {
+  //     headers: {
+  //       Authorization: `Bearer ${token}`,
+  //     },
+  //   });
+  //   setTasks(response.data.tasks);
+  //   console.log(response.data);
+  // };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
