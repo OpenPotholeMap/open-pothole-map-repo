@@ -1,3 +1,4 @@
+import { handleError } from "@/utils/errors";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import mongoSanitize from "express-mongo-sanitize";
 
@@ -17,7 +18,19 @@ export const wrappedHandlers = (
   });
 };
 
-export const sanitizeMiddileWare = () =>
+export const routeErrorHandler = (
+  err: unknown,
+  _req: Request,
+  res: Response,
+
+  _next: NextFunction
+) => {
+  const { statusCode, errors } = handleError(err);
+  res.status(statusCode).json({ errors });
+  return;
+};
+
+export const sanitizeMiddleware = () =>
   mongoSanitize({
     onSanitize: ({ req, key }) => {
       console.warn(`This request [${key}] is sanitized`, req);
