@@ -2,18 +2,17 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCa5Q0zYYTSM0E89bniYLsLUiVh4Ot4_aE",
-  authDomain: "open-pothole-map.firebaseapp.com",
-  projectId: "open-pothole-map",
-  storageBucket: "open-pothole-map.firebasestorage.app",
-  messagingSenderId: "150377865515",
-  appId: "1:150377865515:web:e6026a2fc98131dba5e56e",
-  measurementId: "G-T76HB7HM03"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
-
 
 export { app, auth, googleProvider };
