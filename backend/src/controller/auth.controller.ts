@@ -6,7 +6,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET, NODE_ENV } from "@/config/envs";
 import { getAuth } from "firebase-admin/auth";
-import { throws } from "assert";
+import { app } from "firebase-admin";
+import firebaseApp from "@/config/firebase";
 
 const SignupSchema = zod.object({
   email: zod.string(),
@@ -36,9 +37,10 @@ export const AuthController = {
 
     await UserModel.create({ email, username, encryptedPassword });
 
-    res
-      .status(201)
-      .json({ message: "User created successfully", email, username });
+    res.status(201).json({
+      message: "User created successfully",
+      data: { email, username },
+    });
   },
   login: async (req: Request, res: Response) => {
     const { email, password } = LoginSchema.parse(req.body);
@@ -69,12 +71,32 @@ export const AuthController = {
         secure: NODE_ENV === "production",
       })
       .status(200)
-      .json({ message: "Login successful", email });
+      .json({
+        message: "Login successful",
+        data: {
+          email: user.email,
+          username: user.username,
+          avatarUrl: user.avatarUrl || "",
+        },
+      });
   },
   googleLogin: async (req: Request, res: Response) => {
     const { token } = GoogleLoginSchema.parse(req.body);
 
-    const { email, uid, picture } = await getAuth().verifyIdToken(token);
+    let email: string | undefined, uid: string, picture: string | undefined;
+
+    try {
+      ({ email, uid, picture } = await getAuth(firebaseApp).verifyIdToken(
+        token
+      ));
+      if (!email) {
+        throw new UnauthorizedError("Email not found in Firebase token", {});
+      }
+    } catch (error) {
+      console.error("Error verifying Firebase ID token:", error);
+      throw new UnauthorizedError("Invalid Firebase ID token", { error });
+    }
+
     const username = await getAuth()
       .getUser(uid)
       .then((user) => user.displayName || "");
@@ -106,6 +128,24 @@ export const AuthController = {
         secure: NODE_ENV === "production",
       })
       .status(200)
-      .json({ message: "Google login successful", email });
+      .json({
+        message: "Google login successful",
+        data: {
+          email: user.email,
+          username: user.username,
+          avatarUrl: user.avatarUrl || "",
+        },
+      });
+  },
+  logout: async (req: Request, res: Response) => {
+    res
+      .clearCookie("access_token", {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+      })
+      .status(200)
+      .json({ message: "Logout successful" });
   },
 };

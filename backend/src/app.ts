@@ -2,11 +2,17 @@ import cors from "cors";
 import express, { Request, Response } from "express";
 import { routeErrorHandler } from "./middleware/utils";
 import routes from "./routes";
+import { CLIENT_URL } from "./config/envs";
 
 const app = express();
 
 // Simple CORS setup
-app.use(cors());
+app.use(
+  cors({
+    origin: CLIENT_URL,
+    credentials: true,
+  })
+);
 
 // Middleware
 app.use(express.json());

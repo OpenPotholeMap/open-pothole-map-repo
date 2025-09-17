@@ -1,3 +1,4 @@
+import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { ZodError } from "zod";
 
@@ -59,9 +60,22 @@ export class EmailError extends ApplicationSpecificError {
   }
 }
 
+export const routeErrorHandler = (
+  err: unknown,
+  _req: Request,
+  res: Response,
+
+  _next: NextFunction
+) => {
+  const { statusCode, errors } = handleError(err);
+  res.status(statusCode).json({ errors });
+  return;
+};
+
 export const handleError = (error: unknown) => {
   // console.dir(error, { depth: null });
   if (error instanceof ZodError) {
+    console.log(error);
     return {
       statusCode: 400,
       errors: error.issues.map((issue) => ({

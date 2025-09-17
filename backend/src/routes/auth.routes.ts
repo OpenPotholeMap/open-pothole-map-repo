@@ -8,4 +8,6 @@ AuthRoutes.post("/signup", wrappedHandlers([AuthController.signup]));
 
 AuthRoutes.post("/login", wrappedHandlers([AuthController.login]));
 
-AuthRoutes.post("/google-login", wrappedHandlers([AuthController.googleLogin]));
+AuthRoutes.post("/google", wrappedHandlers([AuthController.googleLogin]));
+
+AuthRoutes.post("/logout", wrappedHandlers([AuthController.logout]));
