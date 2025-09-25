@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/authContext";
-import { LoginWithGoogle } from "./loginPage";
+import { LoginWithGoogle } from "@/components/pages/auth/loginPage";
 import axios from "axios";
 
 const SignupPage = () => {
@@ -42,7 +42,7 @@ const SignupPage = () => {
           <LoginWithGoogle />
 
           <div className="text-center text-sm">
-            Already have an account?{" "}
+            Already have an account?
             <Link to="/login" className="underline">
               Log in
             </Link>

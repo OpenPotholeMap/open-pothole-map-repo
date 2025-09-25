@@ -16,7 +16,7 @@ import axios from "axios";
 
 const LoginPage = () => {
   return (
-    <div className="flex items-center justify-center bg-background px-4 py-20">
+    <main className="flex items-center justify-center bg-background px-4 py-20">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
@@ -27,7 +27,6 @@ const LoginPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Email login form */}
           <LoginWithEmail />
 
           <div className="relative">
@@ -41,7 +40,6 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Google login button */}
           <LoginWithGoogle />
 
           <div className="text-center text-sm">
@@ -52,13 +50,15 @@ const LoginPage = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 };
 
 export const LoginWithGoogle = () => {
   const { user, googleLoginMutation } = useAuth();
   const { isPending, error } = googleLoginMutation;
+
+  console.log(error);
 
   const navigate = useNavigate();
 
@@ -158,7 +158,7 @@ const LoginWithEmail = () => {
       {error && (
         <div className="text-sm text-red-600 text-center bg-red-50 dark:bg-red-900/20 p-2 rounded">
           {axios.isAxiosError(error)
-            ? error.response?.data?.errors[0].message || "Signup failed"
+            ? error.response?.data?.errors[0].message || "Login failed"
             : error.message}
         </div>
       )}

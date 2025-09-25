@@ -4,15 +4,16 @@ import HomePage from "@/components/pages/home/homePage";
 import LoginPage from "@/components/pages/auth/loginPage";
 import SignupPage from "@/components/pages/auth/signupPage";
 import { ThemeProvider } from "@/contexts/theme-context";
-import { AuthProvider } from "./context/authContext";
+import { AuthProvider } from "@/context/authContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import AppLayout from "./components/ui/appLayout";
+import AppLayout from "@/components/ui/appLayout";
+import MapPage from "@/components/pages/map/mapPage";
 
 const queryClient = new QueryClient();
 
 export const App = () => {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="ui-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <Routers>
@@ -21,6 +22,7 @@ export const App = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+                <Route path="/map" element={<MapPage />} />
               </Route>
             </Routes>
           </Routers>
