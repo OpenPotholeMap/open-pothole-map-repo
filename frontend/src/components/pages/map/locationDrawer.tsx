@@ -6,21 +6,19 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import usePlacesAutocomplete, {
   getGeocode,
   getLatLng,
 } from "use-places-autocomplete";
 
-const LocationDrawer = ({
-  userLocation,
-  selectedOrigin,
-  selectedDestination,
-  setSelectedOrigin,
-  setSelectedDestination,
-}: {
+export interface LocationDrawerRef {
+  openDrawer: () => void;
+}
+
+const LocationDrawer = forwardRef<LocationDrawerRef, {
   userLocation: { lat: number; lng: number } | null;
   selectedOrigin: { lat: number; lng: number; address?: string } | null;
   selectedDestination: { lat: number; lng: number; address?: string } | null;
@@ -30,19 +28,27 @@ const LocationDrawer = ({
   setSelectedDestination: (
     destination: { lat: number; lng: number; address?: string } | null
   ) => void;
-}) => {
+  onStartDriving: () => void;
+  isDriving: boolean;
+}>(({
+  userLocation,
+  selectedOrigin,
+  selectedDestination,
+  setSelectedOrigin,
+  setSelectedDestination,
+  onStartDriving,
+  isDriving,
+}, ref) => {
   const [open, setOpen] = useState(false);
 
-  return (
-    <div className="fixed bottom-6 left-6 right-6 z-10">
-      <Drawer open={open} onOpenChange={setOpen} repositionInputs={false}>
-        <DrawerTrigger asChild>
-          <Button className="w-full rounded-md border px-3 py-2 shadow cursor-pointer text-background bg-foreground">
-            Going somewhere?
-          </Button>
-        </DrawerTrigger>
+  useImperativeHandle(ref, () => ({
+    openDrawer: () => setOpen(true),
+  }));
 
-        <DrawerContent className="h-[450px]">
+  return (
+    <div className="fixed bottom-6 left-6 right-6 z-10 pointer-events-none">
+      <Drawer open={open} onOpenChange={setOpen} repositionInputs={false}>
+        <DrawerContent className="h-[500px] pointer-events-auto">
           <div className="p-4">
             <PlacesAutocomplete
               label="From"
@@ -55,12 +61,30 @@ const LocationDrawer = ({
               selectedPlace={selectedDestination}
               setSelectedPlace={setSelectedDestination}
             />
+
+            {/* Start Driving Button */}
+            {!isDriving && (
+              <div className="mt-4">
+                <Button
+                  onClick={() => {
+                    onStartDriving();
+                    setOpen(false);
+                  }}
+                  disabled={!selectedOrigin || !selectedDestination}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  Start Driving
+                </Button>
+              </div>
+            )}
           </div>
         </DrawerContent>
       </Drawer>
     </div>
   );
-};
+});
+
+LocationDrawer.displayName = "LocationDrawer";
 
 // Component for place autocomplete input
 interface PlacesAutocompleteProps {

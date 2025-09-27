@@ -10,12 +10,15 @@ import {
 import { useEffect, useState, useCallback, useRef } from "react";
 import LocationDrawer from "@/components/pages/map/locationDrawer";
 import CompassMarker from "./compassMarker";
-import CameraButton from "@/components/ui/cameraButton";
 import CameraOverlay from "@/components/ui/cameraOverlay";
 import PotholeMarker from "./potholeMarker";
 import { potholeService, type Pothole } from "@/services/potholeService";
 import { socketService } from "@/services/socketService";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import PotholeToast from "@/components/ui/potholeToast";
+import { calculateDistance, isPotholeAhead } from "@/utils/geoUtils";
+import BottomRightButtons from "./bottomRightButtons";
+import type { LocationDrawerRef } from "./locationDrawer";
 
 // Main Map Page Component
 const MapPage = () => {
@@ -48,8 +51,16 @@ const MapPage = () => {
 
   // Pothole markers state
   const [potholes, setPotholes] = useState<Pothole[]>([]);
+
+  // Driving mode state
+  const [isDriving, setIsDriving] = useState(false);
+  const [showPotholeWarning, setShowPotholeWarning] = useState(false);
+  const [warningDistance, setWarningDistance] = useState<number>(0);
+  const [userBearing, setUserBearing] = useState<number>(0);
+  const [lastUserLocation, setLastUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLoadingPotholes, setIsLoadingPotholes] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const locationDrawerRef = useRef<LocationDrawerRef>(null);
 
   useEffect(() => {
     let watchId: number;
@@ -137,7 +148,97 @@ const MapPage = () => {
     };
   }, []);
 
+  // Track bearing when driving
+  useEffect(() => {
+    if (isDriving && lastUserLocation && userLocation) {
+      // Calculate bearing from previous to current location
+      const bearing = calculateBearing(
+        lastUserLocation.lat,
+        lastUserLocation.lng,
+        userLocation.lat,
+        userLocation.lng
+      );
+      setUserBearing(bearing);
+    }
+    setLastUserLocation(userLocation);
+
+    function calculateBearing(
+      lat1: number,
+      lng1: number,
+      lat2: number,
+      lng2: number
+    ): number {
+      const dLng = ((lng2 - lng1) * Math.PI) / 180;
+      const lat1Rad = (lat1 * Math.PI) / 180;
+      const lat2Rad = (lat2 * Math.PI) / 180;
+
+      const y = Math.sin(dLng) * Math.cos(lat2Rad);
+      const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) -
+                Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+
+      let bearing = Math.atan2(y, x);
+      bearing = (bearing * 180) / Math.PI;
+      bearing = (bearing + 360) % 360;
+
+      return bearing;
+    }
+  }, [isDriving, lastUserLocation, userLocation]);
+
   const [markerRef, marker] = useAdvancedMarkerRef();
+
+  // Check for potholes ahead when driving
+  useEffect(() => {
+    if (!isDriving || !userLocation || potholes.length === 0) {
+      setShowPotholeWarning(false);
+      return;
+    }
+
+    const WARNING_DISTANCE = 200; // meters
+    const checkInterval = setInterval(() => {
+      for (const pothole of potholes) {
+        const distance = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          pothole.latitude,
+          pothole.longitude
+        );
+
+        // Check if pothole is within warning distance and ahead
+        if (distance <= WARNING_DISTANCE &&
+            isPotholeAhead(
+              userLocation.lat,
+              userLocation.lng,
+              userBearing,
+              pothole.latitude,
+              pothole.longitude,
+              60 // tolerance angle
+            )) {
+          setWarningDistance(distance);
+          setShowPotholeWarning(true);
+          break;
+        }
+      }
+    }, 2000); // Check every 2 seconds
+
+    return () => clearInterval(checkInterval);
+  }, [isDriving, userLocation, potholes, userBearing]);
+
+  // Driving mode handlers
+  const handleStartDriving = () => {
+    if (!selectedOrigin || !selectedDestination) {
+      alert("Please set both start and end locations before starting driving mode.");
+      return;
+    }
+    setIsDriving(true);
+    console.log("Driving mode started");
+  };
+
+  const handleStopDriving = () => {
+    setIsDriving(false);
+    setShowPotholeWarning(false);
+    setUserBearing(0); // Reset bearing
+    console.log("Driving mode stopped");
+  };
 
   // Debounced function to fetch potholes within map bounds
   const fetchPotholesInBounds = useCallback(async (bounds: google.maps.LatLngBounds) => {
@@ -283,6 +384,8 @@ const MapPage = () => {
         userlocation={userLocation}
         origin={selectedOrigin}
         marker={marker}
+        isDriving={isDriving}
+        userBearing={userBearing}
         onBoundsChanged={(bounds) => {
           // Clear existing debounce
           if (debounceRef.current) {
@@ -297,17 +400,33 @@ const MapPage = () => {
         }}
       />
       <LocationDrawer
+        ref={locationDrawerRef}
         userLocation={userLocation}
         selectedOrigin={selectedOrigin}
         selectedDestination={selectedDestination}
         setSelectedOrigin={setSelectedOrigin}
         setSelectedDestination={setSelectedDestination}
+        onStartDriving={handleStartDriving}
+        isDriving={isDriving}
       />
 
-      {/* Camera Detection Components */}
-      <CameraButton
-        onClick={() => setIsCameraActive(true)}
-        isActive={isCameraActive}
+      {/* Bottom Right Buttons */}
+      <BottomRightButtons
+        onCameraClick={() => {
+          if (isCameraActive) {
+            // If camera is active, close it
+            setIsCameraActive(false);
+            setPotholeCount(0);
+            setCurrentDetectionLocation(null);
+          } else {
+            // If camera is not active, open it
+            setIsCameraActive(true);
+          }
+        }}
+        isCameraActive={isCameraActive}
+        onLocationDrawerOpen={() => locationDrawerRef.current?.openDrawer()}
+        onStopDriving={handleStopDriving}
+        isDriving={isDriving}
       />
 
       {isCameraActive && (
@@ -324,6 +443,13 @@ const MapPage = () => {
           }}
         />
       )}
+
+      {/* Pothole Warning Toast */}
+      <PotholeToast
+        isVisible={showPotholeWarning}
+        distance={warningDistance}
+        onDismiss={() => setShowPotholeWarning(false)}
+      />
       </main>
     </TooltipProvider>
   );
@@ -394,6 +520,8 @@ interface MapHandlerProps {
   origin?: { lat: number; lng: number; address?: string } | null;
   marker: google.maps.marker.AdvancedMarkerElement | null;
   onBoundsChanged?: (bounds: google.maps.LatLngBounds) => void;
+  isDriving: boolean;
+  userBearing: number;
 }
 
 const MapHandler = ({
@@ -401,14 +529,28 @@ const MapHandler = ({
   destination,
   origin,
   marker,
-
   onBoundsChanged,
-
+  isDriving,
+  userBearing,
 }: MapHandlerProps) => {
   const map = useMap();
 
   useEffect(() => {
     if (!map || !marker) return;
+
+    // In driving mode, always center on user location and rotate map
+    if (isDriving && userlocation) {
+      map.setCenter(userlocation);
+      // Rotate map so user arrow points up (north)
+      // Google Maps heading is clockwise from north, so we need to subtract user bearing
+      map.setHeading(userBearing);
+      map.setTilt(0); // Keep map flat for better navigation view
+      return;
+    }
+
+    // Normal mode behavior - reset map rotation
+    map.setHeading(0);
+    map.setTilt(0);
 
     if (!destination) {
       if (userlocation) {
@@ -416,7 +558,6 @@ const MapHandler = ({
         return;
       }
     } else if (destination && !origin) {
-
       map.setCenter({
         lat: destination.lat - 0.0012,
         lng: destination.lng,
@@ -425,7 +566,7 @@ const MapHandler = ({
       marker.position = destination;
     }
 
-  }, [origin, destination, map, marker, userlocation]);
+  }, [origin, destination, map, marker, userlocation, isDriving, userBearing]);
 
   // Set up bounds changed listener for efficient pothole fetching
   useEffect(() => {
