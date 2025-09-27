@@ -4,9 +4,11 @@
   "private": true,
   "description": "Open Pothole Map - Fullstack project with frontend and backend",
   "scripts": {
-    "start:frontend": "cd frontend && npm run dev",
-    "start:backend": "cd backend && npm run dev",
-    "start": "concurrently --kill-others-on-fail \"npm run start:frontend\" \"npm run start:backend\""
+    "frontend": "cd frontend && npm run dev",
+    "backend": "cd backend && npm run dev",
+    "start": "concurrently --kill-others-on-fail \"npm run start:frontend\" \"npm run start:backend\"",
+    "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
+      "dev-host": "concurrently \"npm run dev-host --prefix frontend\" \"npm run dev --prefix backend\""
   },
   "workspaces": [
     "frontend",

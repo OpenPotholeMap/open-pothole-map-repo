@@ -1,17 +1,35 @@
-import express from 'express';
-import cors from 'cors';
-import envConfig from './config/envs.js';
+import app from "@/app";
+import { connectDB } from "@/config/database";
+import { PORT } from "@/config/envs";
+import { createServer } from "http";
+import { SocketService } from "@/services/socketService.js";
 
-const app = express();
+// Connect to database
+await connectDB();
 
-// Simple CORS setup
-app.use(cors());
+// Create HTTP server
+const server = createServer(app);
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Initialize Socket.io
+const socketService = new SocketService(server);
+
+// Optionally broadcast recent potholes every 30 seconds
+setInterval(async () => {
+  try {
+    await socketService.broadcastRecentPotholes();
+  } catch (error) {
+    console.error('Error broadcasting potholes:', error);
+  }
+}, 30000);
 
 // Start server
-app.listen(envConfig.port, () => {
-  console.log(`Server running on port ${envConfig.port}`);
+
+server.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
+  console.log(`Socket.io server ready`);
 });
+
+// Mobile Same network Debugging
+// app.listen(PORT, "0.0.0.0", () => {
+//   console.log(`Server running on http://0.0.0.0:${PORT}`);
+// });
