@@ -1,2 +1,1 @@
-# mcp-project
-MCP Project
+# Open Pothole Map
