@@ -1,0 +1,18 @@
+{
+  "name": "open-pothole-map",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Open Pothole Map - Fullstack project with frontend and backend",
+  "scripts": {
+    "start:frontend": "cd frontend && npm run dev",
+    "start:backend": "cd backend && npm run dev",
+    "start": "npm-run-all --parallel start:frontend start:backend"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}

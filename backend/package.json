@@ -15,12 +15,14 @@
   "type": "module",
   "$schema": "http://json.schemastore.org/package",
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "zod": "^4.0.17"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",
+    "@types/cors": "^2.8.19",
     "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.0",
