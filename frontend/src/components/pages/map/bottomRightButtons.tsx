@@ -23,8 +23,7 @@ const BottomRightButtons = ({
         <Button
           onClick={onStopDriving}
           size="lg"
-          className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg"
-        >
+          className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg">
           <Square className="w-6 h-6" fill="currentColor" />
         </Button>
       )}
@@ -40,8 +39,7 @@ const BottomRightButtons = ({
               ? "bg-red-500 hover:bg-red-600 text-white"
               : "bg-primary hover:bg-primary/90 text-primary-foreground"
           }
-        `}
-      >
+        `}>
         <Camera className="w-6 h-6" />
       </Button>
 
@@ -49,8 +47,7 @@ const BottomRightButtons = ({
       <Button
         onClick={onLocationDrawerOpen}
         size="lg"
-        className="w-14 h-14 rounded-full bg-foreground hover:bg-foreground/90 text-background shadow-lg"
-      >
+        className="w-14 h-14 rounded-full bg-foreground hover:bg-foreground/90 text-background shadow-lg">
         <Navigation className="w-6 h-6" />
       </Button>
     </div>

@@ -40,7 +40,11 @@ const CompassMarker = ({
     }
 
     if (
-      typeof (DeviceOrientationEvent as typeof DeviceOrientationEvent & { requestPermission?: () => Promise<string> }).requestPermission === "function"
+      typeof (
+        DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+          requestPermission?: () => Promise<string>;
+        }
+      ).requestPermission === "function"
     ) {
       // iOS 13+ requires explicit permission
       setNeedsPermission(true);
@@ -60,7 +64,9 @@ const CompassMarker = ({
     try {
       setLoading(true);
       const response = await (
-        DeviceOrientationEvent as typeof DeviceOrientationEvent & { requestPermission: () => Promise<string> }
+        DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+          requestPermission: () => Promise<string>;
+        }
       ).requestPermission();
       if (response === "granted") {
         setNeedsPermission(false);
