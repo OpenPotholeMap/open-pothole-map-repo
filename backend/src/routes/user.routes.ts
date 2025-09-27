@@ -1,4 +1,3 @@
-import { AuthController } from "@/controller/auth.controller";
 import { UserController } from "@/controller/user.controller";
 import { wrappedHandlers } from "@/middleware/utils";
 import { Router } from "express";

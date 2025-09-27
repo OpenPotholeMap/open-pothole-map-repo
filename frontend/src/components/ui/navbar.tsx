@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   Disclosure,
@@ -14,8 +14,9 @@ import { useAuth } from "@/context/authContext";
 import { isMobile } from "react-device-detect";
 
 const navigation = [
-  { name: "Dashboard", href: "/", current: true },
-  { name: "Map", href: "/map", current: false },
+
+  { name: "Dashboard", href: "/" },
+  { name: "Map", href: "/map" },
 ];
 
 function classNames(...classes: string[]) {
@@ -23,6 +24,9 @@ function classNames(...classes: string[]) {
 }
 
 export const Navbar = () => {
+
+  const location = useLocation();
+
   if (isMobile) {
     return <MobileNavbar />;
   }
@@ -49,28 +53,34 @@ export const Navbar = () => {
           </div>
           <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
             <div className="flex shrink-0 items-center">
-              <img
-                alt="Open Pothole Map"
-                src="/logo.png"
-                className="h-8 w-auto"
-              />
+              <Link to="/">
+                <img
+                  alt="Open Pothole Map"
+                  src="/logo.png"
+                  className="h-8 w-auto cursor-pointer"
+                />
+              </Link>
+
             </div>
             <div className="hidden sm:ml-6 sm:block">
               <div className="flex space-x-4">
-                {navigation.map((item) => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    aria-current={item.current ? "page" : undefined}
-                    className={classNames(
-                      item.current
-                        ? "bg-gray-950/50 text-white"
-                        : "text-gray-300 hover:bg-white/5 hover:text-white",
-                      "rounded-md px-3 py-2 text-sm font-medium"
-                    )}>
-                    {item.name}
-                  </a>
-                ))}
+                {navigation.map((item) => {
+                  const isCurrentPage = location.pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      aria-current={isCurrentPage ? "page" : undefined}
+                      className={classNames(
+                        isCurrentPage
+                          ? "bg-gray-950/50 text-white"
+                          : "text-gray-300 hover:bg-white/5 hover:text-white",
+                        "rounded-md px-3 py-2 text-sm font-medium"
+                      )}>
+                      {item.name}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -83,21 +93,24 @@ export const Navbar = () => {
 
       <DisclosurePanel className="sm:hidden">
         <div className="space-y-1 px-2 pt-2 pb-3">
-          {navigation.map((item) => (
-            <DisclosureButton
-              key={item.name}
-              as="a"
-              href={item.href}
-              aria-current={item.current ? "page" : undefined}
-              className={classNames(
-                item.current
-                  ? "bg-gray-950/50 text-white"
-                  : "text-gray-300 hover:bg-white/5 hover:text-white",
-                "block rounded-md px-3 py-2 text-base font-medium"
-              )}>
-              {item.name}
-            </DisclosureButton>
-          ))}
+          {navigation.map((item) => {
+            const isCurrentPage = location.pathname === item.href;
+            return (
+              <DisclosureButton
+                key={item.name}
+                as={Link}
+                to={item.href}
+                aria-current={isCurrentPage ? "page" : undefined}
+                className={classNames(
+                  isCurrentPage
+                    ? "bg-gray-950/50 text-white"
+                    : "text-gray-300 hover:bg-white/5 hover:text-white",
+                  "block rounded-md px-3 py-2 text-base font-medium"
+                )}>
+                {item.name}
+              </DisclosureButton>
+            );
+          })}
         </div>
       </DisclosurePanel>
     </Disclosure>
@@ -105,6 +118,8 @@ export const Navbar = () => {
 };
 
 const MobileNavbar = () => {
+  const location = useLocation();
+
   return (
     <Disclosure
       as="nav"
@@ -128,20 +143,23 @@ const MobileNavbar = () => {
             {/* Navigation items */}
             <div className="hidden sm:ml-6 sm:block">
               <div className="flex space-x-4">
-                {navigation.map((item) => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    aria-current={item.current ? "page" : undefined}
-                    className={classNames(
-                      item.current
-                        ? "bg-gray-950/50 text-white"
-                        : "text-gray-300 hover:bg-white/5 hover:text-white",
-                      "rounded-md px-3 py-2 text-sm font-medium"
-                    )}>
-                    {item.name}
-                  </a>
-                ))}
+                {navigation.map((item) => {
+                  const isCurrentPage = location.pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      aria-current={isCurrentPage ? "page" : undefined}
+                      className={classNames(
+                        isCurrentPage
+                          ? "bg-gray-950/50 text-white"
+                          : "text-gray-300 hover:bg-white/5 hover:text-white",
+                        "rounded-md px-3 py-2 text-sm font-medium"
+                      )}>
+                      {item.name}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -153,16 +171,24 @@ const MobileNavbar = () => {
       </div>
 
       <DisclosurePanel className="sm:hidden flex flex-col items-start ml-2 space-y-2">
-        {navigation.map((item) => (
-          <DisclosureButton
-            key={item.name}
-            as="a"
-            href={item.href}
-            aria-current={item.current ? "page" : undefined}
-            className="inline-flex w-auto shadow-lg rounded-xl bg-foreground text-background px-5 py-2 text-base font-medium">
-            {item.name}
-          </DisclosureButton>
-        ))}
+        {navigation.map((item) => {
+          const isCurrentPage = location.pathname === item.href;
+          return (
+            <DisclosureButton
+              key={item.name}
+              as={Link}
+              to={item.href}
+              aria-current={isCurrentPage ? "page" : undefined}
+              className={classNames(
+                isCurrentPage
+                  ? "shadow-lg rounded-xl bg-primary text-primary-foreground px-5 py-2 text-base font-medium"
+                  : "shadow-lg rounded-xl bg-foreground text-background px-5 py-2 text-base font-medium",
+                "inline-flex w-auto"
+              )}>
+              {item.name}
+            </DisclosureButton>
+          );
+        })}
       </DisclosurePanel>
     </Disclosure>
   );

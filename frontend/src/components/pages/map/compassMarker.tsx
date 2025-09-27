@@ -8,14 +8,27 @@ const CompassMarker = ({
 }) => {
   const [heading, setHeading] = useState<number>(0);
   const [needsPermission, setNeedsPermission] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false); // 🔥 new state
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     console.log("CompassMarker mounted");
-    const handleOrientation = (event: DeviceOrientationEvent) => {
-      if (event.alpha !== null) {
-        setHeading(event.alpha);
-        console.log("Heading changed:", event.alpha); // 🔥 log every movement
+
+    const handleOrientation = (
+      event: DeviceOrientationEvent & { webkitCompassHeading?: number }
+    ) => {
+      let compassdir: number | null = null;
+
+      if (typeof event.webkitCompassHeading !== "undefined") {
+        // iOS Safari/Chrome: true heading
+        compassdir = event.webkitCompassHeading;
+      } else if (event.alpha !== null) {
+        // Other browsers: alpha (relative to north)
+        compassdir = event.alpha;
+      }
+
+      if (compassdir !== null) {
+        setHeading(compassdir);
+        console.log("Heading changed:", compassdir);
       } else {
         console.log("Compass not supported on this device");
       }
@@ -27,15 +40,12 @@ const CompassMarker = ({
     }
 
     if (
-      typeof (DeviceOrientationEvent as any).requestPermission === "function"
+      typeof (DeviceOrientationEvent as typeof DeviceOrientationEvent & { requestPermission?: () => Promise<string> }).requestPermission === "function"
     ) {
+      // iOS 13+ requires explicit permission
       setNeedsPermission(true);
     } else {
-      window.addEventListener(
-        "deviceorientationabsolute",
-        handleOrientation,
-        true
-      );
+      // Non-iOS browsers → just attach
       window.addEventListener("deviceorientation", handleOrientation, true);
       console.log("Compass event listeners added");
     }
@@ -43,36 +53,45 @@ const CompassMarker = ({
     return () => {
       console.log("CompassMarker unmounted, removing event listeners");
       window.removeEventListener("deviceorientation", handleOrientation);
-      window.removeEventListener(
-        "deviceorientationabsolute",
-        handleOrientation
-      );
     };
   }, []);
 
   const requestPermission = async () => {
     try {
-      setLoading(true); // 🔥 show "loading"
+      setLoading(true);
       const response = await (
-        DeviceOrientationEvent as any
+        DeviceOrientationEvent as typeof DeviceOrientationEvent & { requestPermission: () => Promise<string> }
       ).requestPermission();
       if (response === "granted") {
         setNeedsPermission(false);
-        window.addEventListener("deviceorientation", (event) => {
-          if (event.alpha !== null) {
-            setHeading(event.alpha);
-            console.log("Heading changed:", event.alpha);
+
+        const handleOrientation = (
+          event: DeviceOrientationEvent & { webkitCompassHeading?: number }
+        ) => {
+          let compassdir: number | null = null;
+
+          if (typeof event.webkitCompassHeading !== "undefined") {
+            compassdir = event.webkitCompassHeading;
+          } else if (event.alpha !== null) {
+            compassdir = event.alpha;
+          }
+
+          if (compassdir !== null) {
+            setHeading(compassdir);
+            console.log("Heading changed:", compassdir);
           } else {
             console.log("Compass not supported on this device");
           }
-        });
+        };
+
+        window.addEventListener("deviceorientation", handleOrientation, true);
       } else {
         console.log("Compass permission denied");
       }
     } catch (err) {
       console.log("Compass permission denied:", err);
     } finally {
-      setLoading(false); // 🔥 reset loading
+      setLoading(false);
     }
   };
 
@@ -95,7 +114,8 @@ const CompassMarker = ({
           alt="User Direction"
           className="h-8 w-auto"
           style={{
-            transform: `rotate(${-heading}deg)`,
+            // rotate so that 0° = north
+            transform: `rotate(${heading}deg)`,
             transformOrigin: "center center",
           }}
         />

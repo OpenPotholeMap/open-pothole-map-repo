@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from "react";
 import axios from "axios";
-import { request } from "@/utils/api";
+import { request, setAuthClearCallback } from "@/utils/api";
 import {
   useMutation,
   useQueryClient,
@@ -40,7 +40,8 @@ type User = {
 
 type AuthContextType = {
   user: User | null;
-  logoutMutation: UseMutationResult<{ data: {} }, Error, void, unknown>;
+  isLoading: boolean;
+  logoutMutation: UseMutationResult<{ data: Record<string, never> }, Error, void, unknown>;
   googleLoginMutation: UseMutationResult<{ data: User }, Error, void, unknown>;
   loginMutation: UseMutationResult<
     { data: User },
@@ -60,25 +61,41 @@ const authContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = React.useState<User | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   const queryClient = useQueryClient();
+
+  const clearUser = React.useCallback(() => {
+    setUser(null);
+    queryClient.setQueryData(["user"], null);
+  }, [queryClient]);
+
+  useEffect(() => {
+    // Register the clearUser callback with the API utility
+    setAuthClearCallback(clearUser);
+  }, [clearUser]);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
+        setIsLoading(true);
         const res = await axios.get("/api/auth/me", {
           withCredentials: true,
         });
 
         const data = res.data;
         setUser(data.user);
+        queryClient.setQueryData(["user"], data.user);
       } catch (error) {
         console.error("Failed to fetch user:", error);
+        clearUser();
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchUser();
-  }, []);
+  }, [queryClient, clearUser]);
 
   const loginMutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
@@ -91,6 +108,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     onSuccess: (res) => {
       setUser(res.data);
       queryClient.setQueryData(["user"], res.data);
+      setIsLoading(false);
     },
   });
 
@@ -134,6 +152,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     onSuccess: (res) => {
       setUser(res.data);
       queryClient.setQueryData(["user"], res.data);
+      setIsLoading(false);
     },
   });
 
@@ -151,6 +170,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     onSuccess: () => {
       setUser(null);
       queryClient.setQueryData(["user"], null);
+      setIsLoading(false);
     },
   });
 
@@ -158,6 +178,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     <authContext.Provider
       value={{
         user,
+        isLoading,
         loginMutation,
         signupMutation,
         logoutMutation,

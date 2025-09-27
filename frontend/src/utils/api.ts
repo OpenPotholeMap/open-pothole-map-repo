@@ -1,5 +1,12 @@
 import axios from "axios";
 
+// This will be set by the AuthProvider to allow clearing user state on auth failures
+let clearUserCallback: (() => void) | null = null;
+
+export const setAuthClearCallback = (callback: () => void) => {
+  clearUserCallback = callback;
+};
+
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL}/api`,
   headers: { "Content-Type": "application/json" },
@@ -39,6 +46,10 @@ api.interceptors.response.use(
 
       if (status === 401) {
         try {
+          // Clear user state when we get a 401 error
+          if (clearUserCallback) {
+            clearUserCallback();
+          }
           await api.post("/auth/logout", {}, { withCredentials: true });
         } catch (logoutErr) {
           console.error("Logout failed", logoutErr);

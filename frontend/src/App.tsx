@@ -15,8 +15,8 @@ export const App = () => {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Routers>
+        <Routers>
+          <AuthProvider>
             <Routes>
               <Route element={<AppLayout />}>
                 <Route path="/" element={<HomePage />} />
@@ -25,8 +25,8 @@ export const App = () => {
                 <Route path="/map" element={<MapPage />} />
               </Route>
             </Routes>
-          </Routers>
-        </AuthProvider>
+          </AuthProvider>
+        </Routers>
       </QueryClientProvider>
     </ThemeProvider>
   );

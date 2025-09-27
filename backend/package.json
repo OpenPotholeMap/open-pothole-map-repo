@@ -8,7 +8,8 @@
     "lint": "eslint . --ext .ts",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+    "seed": "tsx src/scripts/seed.ts"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,8 @@
   "type": "module",
   "$schema": "http://json.schemastore.org/package",
   "dependencies": {
+    "@types/multer": "^2.0.0",
+    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
@@ -24,6 +27,9 @@
     "firebase-admin": "^13.5.0",
     "mongodb": "^6.18.0",
     "mongoose": "^8.18.0",
+    "multer": "^2.0.2",
+    "sharp": "^0.34.4",
+    "socket.io": "^4.8.1",
     "tsc-alias": "^1.8.16",
     "zod": "^4.0.17"
   },

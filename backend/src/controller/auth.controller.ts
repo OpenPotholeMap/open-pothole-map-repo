@@ -6,7 +6,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET, NODE_ENV } from "@/config/envs";
 import { getAuth } from "firebase-admin/auth";
-import { app } from "firebase-admin";
 import firebaseApp from "@/config/firebase";
 
 const SignupSchema = zod.object({
