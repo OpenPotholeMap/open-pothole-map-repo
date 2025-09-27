@@ -4,7 +4,6 @@ import {
   Map,
   useAdvancedMarkerRef,
   useMap,
-  useMapsLibrary,
 } from "@vis.gl/react-google-maps";
 
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -19,6 +18,7 @@ import PotholeToast from "@/components/ui/potholeToast";
 import { calculateDistance, isPotholeAhead } from "@/utils/geoUtils";
 import BottomRightButtons from "./bottomRightButtons";
 import type { LocationDrawerRef } from "./locationDrawer";
+import Direction from "./direction";
 
 // Main Map Page Component
 const MapPage = () => {
@@ -41,6 +41,12 @@ const MapPage = () => {
     address?: string;
   } | null>(null);
 
+  // Route and directions state
+  const [routes, setRoutes] = useState<google.maps.DirectionsRoute[] | null>(
+    null
+  );
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
+
   // Camera detection state
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [potholeCount, setPotholeCount] = useState(0);
@@ -57,7 +63,10 @@ const MapPage = () => {
   const [showPotholeWarning, setShowPotholeWarning] = useState(false);
   const [warningDistance, setWarningDistance] = useState<number>(0);
   const [userBearing, setUserBearing] = useState<number>(0);
-  const [lastUserLocation, setLastUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [lastUserLocation, setLastUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [isLoadingPotholes, setIsLoadingPotholes] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const locationDrawerRef = useRef<LocationDrawerRef>(null);
@@ -87,7 +96,7 @@ const MapPage = () => {
         {
           enableHighAccuracy: true,
           timeout: 8000,
-          maximumAge: 30000
+          maximumAge: 30000,
         }
       );
     };
@@ -106,7 +115,7 @@ const MapPage = () => {
 
           // Set fallback location after a timeout if no location is obtained
           timeoutId = setTimeout(() => {
-            setUserLocation(prev => {
+            setUserLocation((prev) => {
               if (!prev) {
                 console.log("Using fallback location");
                 return {
@@ -121,7 +130,7 @@ const MapPage = () => {
         {
           enableHighAccuracy: true,
           timeout: 15000,
-          maximumAge: 60000
+          maximumAge: 60000,
         }
       );
     };
@@ -173,8 +182,9 @@ const MapPage = () => {
       const lat2Rad = (lat2 * Math.PI) / 180;
 
       const y = Math.sin(dLng) * Math.cos(lat2Rad);
-      const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) -
-                Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+      const x =
+        Math.cos(lat1Rad) * Math.sin(lat2Rad) -
+        Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
 
       let bearing = Math.atan2(y, x);
       bearing = (bearing * 180) / Math.PI;
@@ -204,15 +214,17 @@ const MapPage = () => {
         );
 
         // Check if pothole is within warning distance and ahead
-        if (distance <= WARNING_DISTANCE &&
-            isPotholeAhead(
-              userLocation.lat,
-              userLocation.lng,
-              userBearing,
-              pothole.latitude,
-              pothole.longitude,
-              60 // tolerance angle
-            )) {
+        if (
+          distance <= WARNING_DISTANCE &&
+          isPotholeAhead(
+            userLocation.lat,
+            userLocation.lng,
+            userBearing,
+            pothole.latitude,
+            pothole.longitude,
+            60 // tolerance angle
+          )
+        ) {
           setWarningDistance(distance);
           setShowPotholeWarning(true);
           break;
@@ -226,7 +238,9 @@ const MapPage = () => {
   // Driving mode handlers
   const handleStartDriving = () => {
     if (!selectedOrigin || !selectedDestination) {
-      alert("Please set both start and end locations before starting driving mode.");
+      alert(
+        "Please set both start and end locations before starting driving mode."
+      );
       return;
     }
     setIsDriving(true);
@@ -241,26 +255,29 @@ const MapPage = () => {
   };
 
   // Debounced function to fetch potholes within map bounds
-  const fetchPotholesInBounds = useCallback(async (bounds: google.maps.LatLngBounds) => {
-    if (isLoadingPotholes) return;
+  const fetchPotholesInBounds = useCallback(
+    async (bounds: google.maps.LatLngBounds) => {
+      if (isLoadingPotholes) return;
 
-    setIsLoadingPotholes(true);
-    try {
-      const boundsObj = {
-        north: bounds.getNorthEast().lat(),
-        south: bounds.getSouthWest().lat(),
-        east: bounds.getNorthEast().lng(),
-        west: bounds.getSouthWest().lng()
-      };
+      setIsLoadingPotholes(true);
+      try {
+        const boundsObj = {
+          north: bounds.getNorthEast().lat(),
+          south: bounds.getSouthWest().lat(),
+          east: bounds.getNorthEast().lng(),
+          west: bounds.getSouthWest().lng(),
+        };
 
-      const potholeData = await potholeService.getPotholesInBounds(boundsObj);
-      setPotholes(potholeData);
-    } catch (error) {
-      console.error('Failed to fetch potholes in bounds:', error);
-    } finally {
-      setIsLoadingPotholes(false);
-    }
-  }, [isLoadingPotholes]);
+        const potholeData = await potholeService.getPotholesInBounds(boundsObj);
+        setPotholes(potholeData);
+      } catch (error) {
+        console.error("Failed to fetch potholes in bounds:", error);
+      } finally {
+        setIsLoadingPotholes(false);
+      }
+    },
+    [isLoadingPotholes]
+  );
 
   // Initial load - fetch potholes for default view
   useEffect(() => {
@@ -269,7 +286,7 @@ const MapPage = () => {
         const potholeData = await potholeService.getPotholes(100);
         setPotholes(potholeData);
       } catch (error) {
-        console.error('Failed to fetch initial potholes:', error);
+        console.error("Failed to fetch initial potholes:", error);
       }
     };
 
@@ -286,50 +303,57 @@ const MapPage = () => {
 
         // Listen for new potholes
         socketService.onNewPothole((newPothole) => {
-          setPotholes(prev => {
+          setPotholes((prev) => {
             // Check if pothole already exists
-            const exists = prev.some(p => p._id === newPothole.id);
+            const exists = prev.some((p) => p._id === newPothole.id);
             if (!exists) {
-              return [...prev, {
-                _id: newPothole.id,
-                latitude: newPothole.latitude,
-                longitude: newPothole.longitude,
-                confidenceScore: newPothole.confidenceScore,
-                detectedAt: newPothole.detectedAt,
-                verified: newPothole.verified,
-                detectionCount: newPothole.detectionCount || 1,
-                imageUrl: newPothole.imageUrl || `placeholder_${Date.now()}.jpg`
-              }];
+              return [
+                ...prev,
+                {
+                  _id: newPothole.id,
+                  latitude: newPothole.latitude,
+                  longitude: newPothole.longitude,
+                  confidenceScore: newPothole.confidenceScore,
+                  detectedAt: newPothole.detectedAt,
+                  verified: newPothole.verified,
+                  detectionCount: newPothole.detectionCount || 1,
+                  imageUrl:
+                    newPothole.imageUrl || `placeholder_${Date.now()}.jpg`,
+                },
+              ];
             }
             return prev;
           });
         });
-
       } catch (error) {
-        console.error('Socket initialization error:', error);
+        console.error("Socket initialization error:", error);
       }
     };
 
     initializeSocketForMap();
 
     return () => {
-      socketService.off('map:new_pothole');
+      socketService.off("map:new_pothole");
     };
   }, []);
 
   // Handle pothole verification updates
-  const handleVerificationUpdate = async (potholeId: string, verified: boolean) => {
+  const handleVerificationUpdate = async (
+    potholeId: string,
+    verified: boolean
+  ) => {
     try {
-      const success = await potholeService.updateVerification(potholeId, verified);
+      const success = await potholeService.updateVerification(
+        potholeId,
+        verified
+      );
       if (success) {
-        setPotholes(prev =>
-          prev.map(p =>
-            p._id === potholeId ? { ...p, verified } : p
-          )
+        setPotholes((prev) =>
+          prev.map((p) => (p._id === potholeId ? { ...p, verified } : p))
         );
       }
     } catch (error) {
-      console.error('Failed to update verification:', error);
+      console.error("Failed to update verification:", error);
     }
   };
 
@@ -338,7 +362,9 @@ const MapPage = () => {
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-lg text-muted-foreground">Getting your location...</p>
+          <p className="text-lg text-muted-foreground">
+            Getting your location...
+          </p>
           <p className="text-sm text-muted-foreground mt-2">
             Please allow location access for the best experience
           </p>
@@ -353,164 +379,113 @@ const MapPage = () => {
     <TooltipProvider>
       <main className="h-screen">
         <Map
-        mapId={mapId || undefined}
-        style={{ width: "100vw", height: "100vh" }}
-        defaultCenter={userLocation}
-        defaultZoom={17}
-        gestureHandling={"greedy"}
-        disableDefaultUI={true}
-        colorScheme={theme === "dark" ? "DARK" : "LIGHT"}>
-        <Direction origin={selectedOrigin} destination={selectedDestination} />
-        {/* User Location Marker */}
-        <CompassMarker position={userLocation} />
-        {/* Destination Marker */}
-        {!selectedOrigin || !selectedDestination ? (
-          <AdvancedMarker
-            ref={markerRef}
-            position={selectedDestination || undefined}
+          mapId={mapId || undefined}
+          style={{ width: "100vw", height: "100vh" }}
+          defaultCenter={userLocation}
+          defaultZoom={17}
+          gestureHandling={"greedy"}
+          disableDefaultUI={true}
+          colorScheme={theme === "dark" ? "DARK" : "LIGHT"}>
+          <Direction
+            origin={selectedOrigin}
+            destination={selectedDestination}
+            setRoutes={setRoutes}
+            selectedRouteIndex={selectedRouteIndex}
           />
-        ) : null}
-        {/* Pothole Markers */}
-        {potholes.map((pothole) => (
-          <PotholeMarker
-            key={pothole._id}
-            pothole={pothole}
-            onVerificationUpdate={handleVerificationUpdate}
-          />
-        ))}
-      </Map>
-      <MapHandler
-        destination={selectedDestination}
-        userlocation={userLocation}
-        origin={selectedOrigin}
-        marker={marker}
-        isDriving={isDriving}
-        userBearing={userBearing}
-        onBoundsChanged={(bounds) => {
-          // Clear existing debounce
-          if (debounceRef.current) {
-            clearTimeout(debounceRef.current);
-          }
-          // Set new debounce
-          debounceRef.current = setTimeout(() => {
-            if (bounds) {
-              fetchPotholesInBounds(bounds);
+          {/* User Location Marker */}
+          <CompassMarker position={userLocation} />
+          {/* Destination Marker */}
+          {!selectedOrigin || !selectedDestination ? (
+            <AdvancedMarker
+              ref={markerRef}
+              position={selectedDestination || undefined}
+            />
+          ) : null}
+          {/* Pothole Markers */}
+          {potholes.map((pothole) => (
+            <PotholeMarker
+              key={pothole._id}
+              pothole={pothole}
+              onVerificationUpdate={handleVerificationUpdate}
+            />
+          ))}
+        </Map>
+        <MapHandler
+          destination={selectedDestination}
+          userlocation={userLocation}
+          origin={selectedOrigin}
+          marker={marker}
+          isDriving={isDriving}
+          userBearing={userBearing}
+          onBoundsChanged={(bounds) => {
+            // Clear existing debounce
+            if (debounceRef.current) {
+              clearTimeout(debounceRef.current);
             }
-          }, 500);
-        }}
-      />
-      <LocationDrawer
-        ref={locationDrawerRef}
-        userLocation={userLocation}
-        selectedOrigin={selectedOrigin}
-        selectedDestination={selectedDestination}
-        setSelectedOrigin={setSelectedOrigin}
-        setSelectedDestination={setSelectedDestination}
-        onStartDriving={handleStartDriving}
-        isDriving={isDriving}
-      />
-
-      {/* Bottom Right Buttons */}
-      <BottomRightButtons
-        onCameraClick={() => {
-          if (isCameraActive) {
-            // If camera is active, close it
-            setIsCameraActive(false);
-            setPotholeCount(0);
-            setCurrentDetectionLocation(null);
-          } else {
-            // If camera is not active, open it
-            setIsCameraActive(true);
-          }
-        }}
-        isCameraActive={isCameraActive}
-        onLocationDrawerOpen={() => locationDrawerRef.current?.openDrawer()}
-        onStopDriving={handleStopDriving}
-        isDriving={isDriving}
-      />
-
-      {isCameraActive && (
-        <CameraOverlay
-          onClose={() => {
-            setIsCameraActive(false);
-            setPotholeCount(0);
-            setCurrentDetectionLocation(null);
-          }}
-          potholeCount={potholeCount}
-          onLocationUpdate={setCurrentDetectionLocation}
-          onPotholeDetected={(count) => {
-            setPotholeCount(prev => prev + count);
+            // Set new debounce
+            debounceRef.current = setTimeout(() => {
+              if (bounds) {
+                fetchPotholesInBounds(bounds);
+              }
+            }, 500);
           }}
         />
-      )}
+        <LocationDrawer
+          ref={locationDrawerRef}
+          userLocation={userLocation}
+          selectedOrigin={selectedOrigin}
+          selectedDestination={selectedDestination}
+          setSelectedOrigin={setSelectedOrigin}
+          setSelectedDestination={setSelectedDestination}
+          onStartDriving={handleStartDriving}
+          isDriving={isDriving}
+          routes={routes}
+          selectedRouteIndex={selectedRouteIndex}
+          setSelectedRouteIndex={setSelectedRouteIndex}
+        />
+        {/* Bottom Right Buttons */}
+        <BottomRightButtons
+          onCameraClick={() => {
+            if (isCameraActive) {
+              // If camera is active, close it
+              setIsCameraActive(false);
+              setPotholeCount(0);
+              setCurrentDetectionLocation(null);
+            } else {
+              // If camera is not active, open it
+              setIsCameraActive(true);
+            }
+          }}
+          isCameraActive={isCameraActive}
+          onLocationDrawerOpen={() => locationDrawerRef.current?.openDrawer()}
+          onStopDriving={handleStopDriving}
+          isDriving={isDriving}
+        />
 
-      {/* Pothole Warning Toast */}
-      <PotholeToast
-        isVisible={showPotholeWarning}
-        distance={warningDistance}
-        onDismiss={() => setShowPotholeWarning(false)}
-      />
+        {isCameraActive && (
+          <CameraOverlay
+            onClose={() => {
+              setIsCameraActive(false);
+              setPotholeCount(0);
+              setCurrentDetectionLocation(null);
+            }}
+            potholeCount={potholeCount}
+            onLocationUpdate={setCurrentDetectionLocation}
+            onPotholeDetected={(count) => {
+              setPotholeCount((prev) => prev + count);
+            }}
+          />
+        )}
+
+        {/* Pothole Warning Toast */}
+        <PotholeToast
+          isVisible={showPotholeWarning}
+          distance={warningDistance}
+          onDismiss={() => setShowPotholeWarning(false)}
+        />
       </main>
     </TooltipProvider>
   );
-};
-
-// Component to handle directions rendering
-const Direction = ({
-  origin,
-  destination,
-}: {
-  origin: { lat: number; lng: number } | null;
-  destination: { lat: number; lng: number } | null;
-}) => {
-  const map = useMap();
-  const routesLibrary = useMapsLibrary("routes");
-  const [directionsService, setDirectionsService] =
-    useState<google.maps.DirectionsService | null>(null);
-  const [directionsRenderer, setDirectionsRenderer] =
-    useState<google.maps.DirectionsRenderer | null>(null);
-  const [, setRoutes] = useState<google.maps.DirectionsRoute[] | null>(
-    null
-  );
-
-  useEffect(() => {
-    if (!map || !routesLibrary) return;
-    if (!directionsService) {
-      setDirectionsService(new routesLibrary.DirectionsService());
-    }
-    if (!directionsRenderer) {
-      setDirectionsRenderer(new routesLibrary.DirectionsRenderer());
-    }
-  }, [routesLibrary, map]);
-
-  useEffect(() => {
-    if (!map || !directionsRenderer || !directionsService) return;
-    if (!origin || !destination) {
-      directionsRenderer.setMap(null);
-      setRoutes(null);
-      return;
-    }
-
-    directionsRenderer.setMap(map);
-
-    directionsService
-      .route({
-        origin: origin,
-        destination: destination,
-        travelMode: google.maps.TravelMode.DRIVING,
-      })
-      .then((response) => {
-        directionsRenderer.setDirections(response);
-        setRoutes(response.routes);
-
-      })
-      .catch((error) => {
-        console.error("Directions request failed:", error);
-
-      });
-  }, [directionsService, directionsRenderer, origin, destination, map]);
-
-  return null;
 };
 
 // Component to handle map centering and marker positioning
@@ -535,44 +510,44 @@ const MapHandler = ({
 }: MapHandlerProps) => {
   const map = useMap();
 
+  // 🚗 Driving mode effect
   useEffect(() => {
-    if (!map || !marker) return;
+    if (!map || !userlocation || !isDriving) return;
 
-    // In driving mode, always center on user location and rotate map
-    if (isDriving && userlocation) {
-      map.setCenter(userlocation);
-      // Rotate map so user arrow points up (north)
-      // Google Maps heading is clockwise from north, so we need to subtract user bearing
-      map.setHeading(userBearing);
-      map.setTilt(0); // Keep map flat for better navigation view
-      return;
-    }
+    const interval = setInterval(() => {
+      map.panTo(userlocation);
+      map.setZoom(17);
+      map.setTilt(65);
+    }, 1000);
 
-    // Normal mode behavior - reset map rotation
+    return () => clearInterval(interval);
+  }, [map, userlocation, isDriving]);
+
+  // 🗺️ Normal mode effect
+  useEffect(() => {
+    if (!map || !marker || isDriving) return;
+
     map.setHeading(0);
     map.setTilt(0);
 
     if (!destination) {
       if (userlocation) {
         map.setCenter(userlocation);
-        return;
       }
     } else if (destination && !origin) {
       map.setCenter({
         lat: destination.lat - 0.0012,
         lng: destination.lng,
       });
-
       marker.position = destination;
     }
-
-  }, [origin, destination, map, marker, userlocation, isDriving, userBearing]);
+  }, [map, marker, origin, destination]);
 
   // Set up bounds changed listener for efficient pothole fetching
   useEffect(() => {
     if (!map || !onBoundsChanged) return;
 
-    const boundsChangedListener = map.addListener('bounds_changed', () => {
+    const boundsChangedListener = map.addListener("bounds_changed", () => {
       const bounds = map.getBounds();
       if (bounds) {
         onBoundsChanged(bounds);

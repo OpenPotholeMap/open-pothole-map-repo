@@ -18,71 +18,109 @@ export interface LocationDrawerRef {
   openDrawer: () => void;
 }
 
-const LocationDrawer = forwardRef<LocationDrawerRef, {
-  userLocation: { lat: number; lng: number } | null;
-  selectedOrigin: { lat: number; lng: number; address?: string } | null;
-  selectedDestination: { lat: number; lng: number; address?: string } | null;
-  setSelectedOrigin: (
-    origin: { lat: number; lng: number; address?: string } | null
-  ) => void;
-  setSelectedDestination: (
-    destination: { lat: number; lng: number; address?: string } | null
-  ) => void;
-  onStartDriving: () => void;
-  isDriving: boolean;
-}>(({
-  userLocation,
-  selectedOrigin,
-  selectedDestination,
-  setSelectedOrigin,
-  setSelectedDestination,
-  onStartDriving,
-  isDriving,
-}, ref) => {
-  const [open, setOpen] = useState(false);
+const LocationDrawer = forwardRef<
+  LocationDrawerRef,
+  {
+    userLocation: { lat: number; lng: number } | null;
+    selectedOrigin: { lat: number; lng: number; address?: string } | null;
+    selectedDestination: { lat: number; lng: number; address?: string } | null;
+    setSelectedOrigin: (
+      origin: { lat: number; lng: number; address?: string } | null
+    ) => void;
+    setSelectedDestination: (
+      destination: { lat: number; lng: number; address?: string } | null
+    ) => void;
+    onStartDriving: () => void;
+    isDriving: boolean;
+    routes: google.maps.DirectionsRoute[] | null;
+    selectedRouteIndex?: number;
+    setSelectedRouteIndex?: (index: number) => void;
+  }
+>(
+  (
+    {
+      userLocation,
+      selectedOrigin,
+      selectedDestination,
+      setSelectedOrigin,
+      setSelectedDestination,
+      onStartDriving,
+      isDriving,
+      routes,
+      selectedRouteIndex = 0,
+      setSelectedRouteIndex = () => {},
+    },
+    ref
+  ) => {
+    const [open, setOpen] = useState(false);
 
-  useImperativeHandle(ref, () => ({
-    openDrawer: () => setOpen(true),
-  }));
+    useImperativeHandle(ref, () => ({
+      openDrawer: () => setOpen(true),
+    }));
 
-  return (
-    <div className="fixed bottom-6 left-6 right-6 z-10 pointer-events-none">
-      <Drawer open={open} onOpenChange={setOpen} repositionInputs={false}>
-        <DrawerContent className="h-[500px] pointer-events-auto">
-          <div className="p-4">
-            <PlacesAutocomplete
-              label="From"
-              currentPosition={userLocation}
-              selectedPlace={selectedOrigin}
-              setSelectedPlace={setSelectedOrigin}
-            />
-            <PlacesAutocomplete
-              label="To"
-              selectedPlace={selectedDestination}
-              setSelectedPlace={setSelectedDestination}
-            />
+    return (
+      <div className="fixed bottom-6 left-6 right-6 z-10 pointer-events-none">
+        <Drawer open={open} onOpenChange={setOpen} repositionInputs={false}>
+          <DrawerContent className="h-[500px] pointer-events-auto">
+            <div className="p-4">
+              <PlacesAutocomplete
+                label="From"
+                currentPosition={userLocation}
+                selectedPlace={selectedOrigin}
+                setSelectedPlace={setSelectedOrigin}
+              />
+              <PlacesAutocomplete
+                label="To"
+                selectedPlace={selectedDestination}
+                setSelectedPlace={setSelectedDestination}
+              />
 
-            {/* Start Driving Button */}
-            {!isDriving && (
-              <div className="mt-4">
-                <Button
-                  onClick={() => {
-                    onStartDriving();
-                    setOpen(false);
-                  }}
-                  disabled={!selectedOrigin || !selectedDestination}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  Start Driving
-                </Button>
-              </div>
-            )}
-          </div>
-        </DrawerContent>
-      </Drawer>
-    </div>
-  );
-});
+              {routes && routes.length > 0 && (
+                <ScrollArea className="mt-3 h-50 block rounded-md border border-border bg-background">
+                  <div className="p-2 space-y-2">
+                    {routes.map((route, i) => (
+                      <div
+                        key={i}
+                        className={`p-3 rounded-md cursor-pointer transition-colors ${
+                          i === selectedRouteIndex
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted hover:bg-muted/80"
+                        }`}
+                        onClick={() => setSelectedRouteIndex(i)}>
+                        <p className="text-sm font-medium">
+                          {route.summary || `Route ${i + 1}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {route.legs[0].distance?.text} •{" "}
+                          {route.legs[0].duration?.text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+
+              {/* Start Driving Button */}
+              {!isDriving && (
+                <div className="mt-4">
+                  <Button
+                    onClick={() => {
+                      onStartDriving();
+                      setOpen(false);
+                    }}
+                    disabled={!selectedOrigin || !selectedDestination}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white">
+                    Start Driving
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DrawerContent>
+        </Drawer>
+      </div>
+    );
+  }
+);
 
 LocationDrawer.displayName = "LocationDrawer";
 
