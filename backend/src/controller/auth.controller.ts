@@ -34,15 +34,19 @@ export const AuthController = {
 
     const encryptedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await UserModel.create({ email, username, encryptedPassword });
+    const newUser = await UserModel.create({
+      email,
+      username,
+      encryptedPassword,
+    });
 
     res.status(201).json({
       message: "User created successfully",
       data: {
-        id: newUser._id.toString(),
+        id: (newUser._id as any).toString(),
         email: newUser.email,
         username: newUser.username,
-        role: newUser.role
+        role: newUser.role,
       },
     });
   },
@@ -78,7 +82,7 @@ export const AuthController = {
       .json({
         message: "Login successful",
         data: {
-          id: user._id.toString(),
+          id: (user._id as any).toString(),
           email: user.email,
           username: user.username,
           role: user.role,
@@ -137,7 +141,7 @@ export const AuthController = {
       .json({
         message: "Google login successful",
         data: {
-          id: user._id.toString(),
+          id: (user._id as any).toString(),
           email: user.email,
           username: user.username,
           role: user.role,
@@ -161,34 +165,36 @@ export const AuthController = {
       const token = req.cookies.access_token;
 
       if (!token) {
-        return res.status(401).json({
-          message: "Not authenticated"
+        res.status(401).json({
+          message: "Not authenticated",
         });
+        return;
       }
 
       const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
       const user = await UserModel.findById(decoded.id);
 
       if (!user) {
-        return res.status(401).json({
-          message: "User not found"
+        res.status(401).json({
+          message: "User not found",
         });
+        return;
       }
 
       res.status(200).json({
         message: "User retrieved successfully",
         user: {
-          id: user._id.toString(),
+          id: (user._id as any).toString(),
           email: user.email,
           username: user.username,
           role: user.role,
           avatarUrl: user.avatarUrl || "",
-        }
+        },
       });
     } catch (error) {
       console.error("Get user error:", error);
       res.status(401).json({
-        message: "Invalid token"
+        message: "Invalid token",
       });
     }
   },
