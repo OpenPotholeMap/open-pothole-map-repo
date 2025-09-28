@@ -17,6 +17,8 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
   const [isConnected, setIsConnected] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -114,7 +116,14 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
   useEffect(() => {
     const startStream = async () => {
       try {
-        const constraints = {
+        setIsInitializing(true);
+        setCameraError(null);
+
+        // Create abort controller for timeout handling
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 10000); // 10 second timeout
+
+        let constraints = {
           video: {
             deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined,
             width: { ideal: 640 },
@@ -122,22 +131,69 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
           }
         };
 
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        let stream: MediaStream;
+
+        try {
+          // Try with specific device constraints first
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (specificError) {
+          console.warn('Failed with specific constraints, trying fallback:', specificError);
+
+          // Fallback to basic constraints without specific device
+          constraints = {
+            video: {
+              width: { ideal: 640 },
+              height: { ideal: 480 }
+            }
+          };
+
+          try {
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+          } catch (fallbackError) {
+            console.warn('Failed with fallback constraints, trying minimal:', fallbackError);
+
+            // Ultimate fallback - just request video
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          }
+        }
+
+        clearTimeout(timeoutId);
         streamRef.current = stream;
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          setIsStreaming(true);
 
-          // Start sending frames every 2 seconds
-          frameIntervalRef.current = setInterval(captureFrame, 2000);
+          // Wait for video to load before setting streaming state
+          videoRef.current.onloadedmetadata = () => {
+            setIsStreaming(true);
+            setIsInitializing(false);
+            // Start sending frames every 2 seconds
+            frameIntervalRef.current = setInterval(captureFrame, 250);
+          };
         }
       } catch (error) {
         console.error('Error starting camera:', error);
+        setIsInitializing(false);
+
+        // Set user-friendly error message
+        let errorMessage = 'Unknown camera error';
+        if (error.name === 'NotAllowedError') {
+          errorMessage = 'Camera access denied. Please enable camera permissions.';
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = 'No camera found. Please ensure a camera is connected.';
+        } else if (error.name === 'AbortError') {
+          errorMessage = 'Camera startup timed out. Please try again.';
+        } else if (error.message) {
+          errorMessage = `Camera error: ${error.message}`;
+        }
+
+        setCameraError(errorMessage);
       }
     };
 
-    startStream();
+    if (selectedCameraId !== undefined) {
+      startStream();
+    }
 
     return () => {
       if (streamRef.current) {
@@ -194,6 +250,13 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
   const handleCameraChange = (cameraId: string) => {
     setSelectedCameraId(cameraId);
     setShowCameraList(false);
+  };
+
+  const handleRetry = () => {
+    setCameraError(null);
+    setIsInitializing(true);
+    // Reset selected camera to trigger re-initialization
+    setSelectedCameraId(availableCameras.length > 0 ? availableCameras[0].deviceId : "");
   };
 
   return (
@@ -269,9 +332,28 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
       </div>
 
       {/* Loading State */}
-      {!isStreaming && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="text-white">Starting camera...</div>
+      {isInitializing && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="text-white text-center">
+            <div className="mb-2">Starting camera...</div>
+            <div className="text-sm text-gray-300">This may take a few seconds</div>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {cameraError && !isInitializing && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="text-center px-4">
+            <div className="text-red-400 mb-3">📷</div>
+            <div className="text-white text-sm mb-3">{cameraError}</div>
+            <button
+              onClick={handleRetry}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors duration-200"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       )}
     </div>
