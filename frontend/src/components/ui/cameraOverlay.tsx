@@ -203,7 +203,19 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
         clearInterval(frameIntervalRef.current);
       }
     };
-  }, [selectedCameraId, captureFrame]);
+  }, [selectedCameraId]);
+
+  useEffect(() => {
+    if (!isStreaming) return;
+
+    frameIntervalRef.current = setInterval(() => {
+      captureFrame();
+    }, 50);
+
+    return () => {
+      if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+    };
+  }, [isStreaming, currentLocation, isConnected]); // dependent on streaming & location
 
   // Check if demo script is active and get mock location
   const getDemoLocation = useCallback(() => {
