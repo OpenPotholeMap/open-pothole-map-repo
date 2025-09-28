@@ -20,6 +20,7 @@ import { calculateDistance, isPotholeAhead } from "@/utils/geoUtils";
 import BottomRightButtons from "./bottomRightButtons";
 import type { LocationDrawerRef } from "./locationDrawer";
 import Direction from "./direction";
+import { useCompass } from "./authHook";
 
 // Main Map Page Component
 const MapPage = () => {
@@ -48,6 +49,9 @@ const MapPage = () => {
     null
   );
   const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
+
+  // Compass state
+  const { heading, needsPermission, requestPermission } = useCompass();
 
   // Camera detection state
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -394,7 +398,7 @@ const MapPage = () => {
             selectedRouteIndex={selectedRouteIndex}
           />
           {/* User Location Marker */}
-          <CompassMarker position={userLocation} />
+          <CompassMarker position={userLocation} heading={heading} />
           {/* Destination Marker */}
           {!selectedOrigin || !selectedDestination ? (
             <AdvancedMarker
@@ -462,6 +466,8 @@ const MapPage = () => {
           onLocationDrawerOpen={() => locationDrawerRef.current?.openDrawer()}
           onStopDriving={handleStopDriving}
           isDriving={isDriving}
+          needsPermission={needsPermission}
+          requestPermission={requestPermission}
         />
 
         {isCameraActive && (
