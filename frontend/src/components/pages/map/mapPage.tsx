@@ -74,6 +74,11 @@ const MapPage = () => {
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const locationDrawerRef = useRef<LocationDrawerRef>(null);
 
+  // Toast state management
+  const [lastWarningTime, setLastWarningTime] = useState<number>(0);
+  const [currentWarningPothole, setCurrentWarningPothole] = useState<string | null>(null);
+  const toastCooldownRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     let watchId: number;
     let timeoutId: NodeJS.Timeout;
@@ -199,55 +204,151 @@ const MapPage = () => {
 
   const [markerRef, marker] = useAdvancedMarkerRef();
 
-  // Check for potholes ahead when driving
+  // Check for potholes ahead when driving with debouncing
   useEffect(() => {
-    if (!isDriving || !userLocation || potholes.length === 0) {
+    if (!isDriving || !userLocation) {
       setShowPotholeWarning(false);
+      setCurrentWarningPothole(null);
       return;
     }
 
     const WARNING_DISTANCE = 200; // meters
-    const checkInterval = setInterval(() => {
-      for (const pothole of potholes) {
-        const distance = calculateDistance(
-          userLocation.lat,
-          userLocation.lng,
-          pothole.latitude,
-          pothole.longitude
-        );
+    const TOAST_COOLDOWN = 3000; // 3 seconds minimum between warnings for same pothole
+    const TOAST_DURATION = 6000; // Toast stays visible for 6 seconds
 
-        // Check if pothole is within warning distance and ahead
-        if (
-          distance <= WARNING_DISTANCE &&
-          isPotholeAhead(
+    // If no potholes are loaded, create some demo potholes for testing
+    let potholesToCheck = potholes;
+    if (potholes.length === 0) {
+      // Create demo potholes along the demo routes
+      potholesToCheck = [
+        {
+          _id: 'demo-1',
+          latitude: 25.7920,
+          longitude: -80.2050,
+          confidenceScore: 0.85,
+          detectedAt: new Date().toISOString(),
+          verified: true,
+          detectionCount: 1,
+          images: []
+        },
+        {
+          _id: 'demo-2',
+          latitude: 25.8100,
+          longitude: -80.2050,
+          confidenceScore: 0.90,
+          detectedAt: new Date().toISOString(),
+          verified: true,
+          detectionCount: 1,
+          images: []
+        },
+        {
+          _id: 'demo-3',
+          latitude: 25.7800,
+          longitude: -80.2200,
+          confidenceScore: 0.88,
+          detectedAt: new Date().toISOString(),
+          verified: true,
+          detectionCount: 1,
+          images: []
+        }
+      ];
+    }
+
+    let closestPothole = null;
+    let closestDistance = Infinity;
+
+    // Find the closest pothole within warning distance
+    for (const pothole of potholesToCheck) {
+      const distance = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        pothole.latitude,
+        pothole.longitude
+      );
+
+      // Check if pothole is within warning distance
+      if (distance <= WARNING_DISTANCE) {
+        // If we have a valid bearing, check if pothole is ahead
+        if (userBearing > 0) {
+          const isAhead = isPotholeAhead(
             userLocation.lat,
             userLocation.lng,
             userBearing,
             pothole.latitude,
             pothole.longitude,
-            60 // tolerance angle
-          )
-        ) {
-          setWarningDistance(distance);
-          setShowPotholeWarning(true);
-          break;
+            90 // Increased tolerance angle for demo
+          );
+
+          if (isAhead && distance < closestDistance) {
+            closestPothole = pothole;
+            closestDistance = distance;
+          }
+        } else {
+          // If no bearing available, warn about nearby potholes
+          if (distance < closestDistance) {
+            closestPothole = pothole;
+            closestDistance = distance;
+          }
         }
       }
-    }, 2000); // Check every 2 seconds
+    }
 
-    return () => clearInterval(checkInterval);
-  }, [isDriving, userLocation, potholes, userBearing]);
+    const now = Date.now();
+
+    if (closestPothole) {
+      // Check if we should show warning for this pothole
+      const shouldShowWarning =
+        currentWarningPothole !== closestPothole._id ||
+        (now - lastWarningTime) > TOAST_COOLDOWN;
+
+      if (shouldShowWarning && !showPotholeWarning) {
+        console.log('⚠️ WARNING: Pothole detected!', {
+          distance: closestDistance,
+          pothole: closestPothole._id,
+          lastWarning: lastWarningTime,
+          timeSinceLastWarning: now - lastWarningTime
+        });
+
+        setWarningDistance(closestDistance);
+        setShowPotholeWarning(true);
+        setCurrentWarningPothole(closestPothole._id);
+        setLastWarningTime(now);
+
+        // Clear any existing cooldown timer
+        if (toastCooldownRef.current) {
+          clearTimeout(toastCooldownRef.current);
+        }
+
+        // Auto-hide toast after duration
+        toastCooldownRef.current = setTimeout(() => {
+          setShowPotholeWarning(false);
+        }, TOAST_DURATION);
+      }
+    }
+
+    return () => {
+      if (toastCooldownRef.current) {
+        clearTimeout(toastCooldownRef.current);
+      }
+    };
+  }, [isDriving, userLocation, potholes, userBearing, showPotholeWarning, currentWarningPothole, lastWarningTime]);
 
   // Driving mode handlers
   const handleStartDriving = () => {
-    if (!selectedOrigin || !selectedDestination) {
+    // For demo purposes, allow driving mode without strict origin/destination requirements
+    const isDemoMode = window.location.search.includes('demo') ||
+                      localStorage.getItem('demo-mode') === 'true' ||
+                      userLocation?.lat === 25.7900; // Miami demo area
+
+    if (!isDemoMode && (!selectedOrigin || !selectedDestination)) {
       alert(
         "Please set both start and end locations before starting driving mode."
       );
       return;
     }
+
     setIsDriving(true);
-    console.log("Driving mode started");
+    console.log("🚗 Driving mode started", { isDemoMode, userLocation });
   };
 
   const handleStopDriving = () => {
