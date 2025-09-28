@@ -165,7 +165,19 @@ const CameraOverlay = ({
         clearInterval(frameIntervalRef.current);
       }
     };
-  }, [selectedCameraId, captureFrame]);
+  }, [selectedCameraId]);
+
+  useEffect(() => {
+    if (!isStreaming) return;
+
+    frameIntervalRef.current = setInterval(() => {
+      captureFrame();
+    }, 2000);
+
+    return () => {
+      if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+    };
+  }, [isStreaming, currentLocation, isConnected]); // dependent on streaming & location
 
   // Get and send location updates
   useEffect(() => {
