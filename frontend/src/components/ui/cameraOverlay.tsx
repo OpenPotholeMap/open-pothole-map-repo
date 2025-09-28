@@ -205,27 +205,84 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
     };
   }, [selectedCameraId, captureFrame]);
 
+  // Check if demo script is active and get mock location
+  const getDemoLocation = useCallback(() => {
+    // Check if the demo script is active and has current location
+    if (window.demoLocation) {
+      const status = window.demoLocation.status();
+      if (status.active && status.currentLocation) {
+        return {
+          lat: status.currentLocation.lat,
+          lng: status.currentLocation.lng
+        };
+      }
+    }
+    return null;
+  }, []);
+
   // Get and send location updates
   useEffect(() => {
     if (!isStreaming) return;
 
+    // Check for demo location first
+    const updateLocation = () => {
+      const demoLocation = getDemoLocation();
+      if (demoLocation) {
+        console.log('Using demo location:', demoLocation);
+        setCurrentLocation(demoLocation);
+        if (onLocationUpdate) {
+          onLocationUpdate(demoLocation);
+        }
+        return;
+      }
+
+      // Fall back to real GPS location if no demo location
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          setCurrentLocation(newLocation);
+          if (onLocationUpdate) {
+            onLocationUpdate(newLocation);
+          }
+        },
+        (error) => console.error('Location error:', error),
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+      );
+    };
+
+    // Update location immediately
+    updateLocation();
+
+    // Set up interval to check for location updates
+    const locationInterval = setInterval(updateLocation, 1000); // Check every second
+
+    // Also set up GPS watching as fallback when demo is not active
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        const newLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        setCurrentLocation(newLocation);
-        if (onLocationUpdate) {
-          onLocationUpdate(newLocation);
+        // Only use GPS if demo is not active
+        if (!getDemoLocation()) {
+          const newLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          setCurrentLocation(newLocation);
+          if (onLocationUpdate) {
+            onLocationUpdate(newLocation);
+          }
         }
       },
       (error) => console.error('Location error:', error),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
     );
 
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, [isStreaming, onLocationUpdate]);
+    return () => {
+      clearInterval(locationInterval);
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [isStreaming, onLocationUpdate, getDemoLocation]);
 
   const handleStopCamera = async () => {
     // Stop video stream

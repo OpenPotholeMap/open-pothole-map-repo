@@ -139,9 +139,9 @@ class SocketService {
       if (detectionResult && detectionResult.predictions?.length > 0) {
         console.log(`🔍 Filtering pothole detections from ${detectionResult.predictions.length} predictions...`);
 
-        // Filter for pothole detections with high confidence
+        // Filter for pothole detections with confidence above threshold
         const potholeDetections = detectionResult.predictions.filter(
-          pred => pred.class.toLowerCase().includes('pothole') && pred.confidence > 0.7
+          pred => pred.class.toLowerCase().includes('pothole') && pred.confidence > 0.2
         );
 
         console.log(`🎯 Found ${potholeDetections.length} valid pothole detection(s)`);
@@ -191,7 +191,7 @@ class SocketService {
             console.log(`❌ Failed to save pothole to database`);
           }
         } else {
-          console.log(`🚫 No valid pothole detections found (confidence threshold: 70%)`);
+          console.log(`🚫 No valid pothole detections found (confidence threshold: 20%)`);
         }
       } else {
         console.log(`❌ No predictions returned from Roboflow`);
@@ -208,10 +208,14 @@ class SocketService {
   }
 
   private broadcastPotholeToMap(location: { latitude: number, longitude: number }, potholeData: unknown) {
-    // Create room based on geographic area (1-degree grid)
+    // Create room based on geographic area (1-degree grid) - match subscription format: north_south_east_west
     const room = `map_${Math.floor(location.latitude)}_${Math.floor(location.latitude)}_${Math.floor(location.longitude)}_${Math.floor(location.longitude)}`;
 
+    // Broadcast to specific geographic room
     this.io.to(room).emit('map:new_pothole', potholeData);
+
+    // Also broadcast to all connected map clients as fallback for immediate updates
+    this.io.emit('map:new_pothole', potholeData);
   }
 
   // Method to broadcast potholes to all map subscribers
