@@ -32,7 +32,6 @@
     "sharp": "^0.34.4",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "tsc-alias": "^1.8.16",
     "zod": "^4.0.17"
   },
   "devDependencies": {
@@ -51,6 +50,7 @@
     "nodemon": "^3.1.10",
     "npm": "^11.6.0",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
