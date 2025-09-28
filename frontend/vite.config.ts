@@ -12,11 +12,11 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  server: {
-    https: {
-      key: fs.readFileSync("C:/Windows/System32/cert.key"),
-      cert: fs.readFileSync("C:/Windows/System32/cert.crt"),
-    },
-    port: 3000,
-  },
+  // server: {
+  //   https: {
+  //     key: fs.readFileSync("C:/Windows/System32/cert.key"),
+  //     cert: fs.readFileSync("C:/Windows/System32/cert.crt"),
+  //   },
+  //   port: 3000,
+  // },
 });

@@ -1,6 +1,6 @@
 import express from 'express';
 import { detectionService } from '@/services/detectionService.js';
-import { PotholeModel } from '@/models/index.js';
+import { PotholeModel, ConfirmationModel, UserModel } from '@/models/index.js';
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ router.post('/', async (req, res) => {
       latitude,
       longitude,
       confidenceScore = 0.5,
-      imageUrl = `placeholder_manual_${Date.now()}.jpg`,
+      images = [],
       verified = false,
       detectionCount = 1
     } = req.body;
@@ -39,7 +39,7 @@ router.post('/', async (req, res) => {
       latitude,
       longitude,
       confidenceScore,
-      imageUrl,
+      images,
       verified,
       detectionCount,
       detectedAt: new Date(),
@@ -102,7 +102,7 @@ router.get('/bounds', async (req, res) => {
         $lte: parseFloat(east as string)
       }
     })
-    .select('latitude longitude confidenceScore detectedAt verified detectionCount imageUrl')
+    .select('latitude longitude confidenceScore detectedAt verified detectionCount images')
     .sort({ detectedAt: -1 })
     .limit(200)
     .lean();
@@ -200,6 +200,160 @@ router.delete('/:id', async (req, res) => {
     console.error('Delete pothole error:', error);
     res.status(500).json({
       message: 'Failed to delete pothole',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Confirm pothole status (logged in users only)
+router.post('/:id/confirm', async (req, res) => {
+  try {
+    const { status, userId } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: 'User must be logged in to confirm pothole status'
+      });
+    }
+
+    if (!status || !['still_there', 'not_there'].includes(status)) {
+      return res.status(400).json({
+        message: 'Status must be either "still_there" or "not_there"'
+      });
+    }
+
+    // Check if pothole exists
+    const pothole = await PotholeModel.findById(req.params.id);
+    if (!pothole) {
+      return res.status(404).json({
+        message: 'Pothole not found'
+      });
+    }
+
+    // Check if user exists
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found'
+      });
+    }
+
+    // Check if user already confirmed this pothole
+    const existingConfirmation = await ConfirmationModel.findOne({
+      potholeId: req.params.id,
+      userId: userId
+    });
+
+    if (existingConfirmation) {
+      return res.status(409).json({
+        message: 'User has already confirmed this pothole'
+      });
+    }
+
+    // Create new confirmation
+    const confirmation = new ConfirmationModel({
+      potholeId: req.params.id,
+      userId: userId,
+      status: status
+    });
+
+    const savedConfirmation = await confirmation.save();
+
+    res.status(201).json({
+      message: 'Pothole confirmation recorded successfully',
+      data: savedConfirmation
+    });
+  } catch (error) {
+    console.error('Confirm pothole error:', error);
+    res.status(500).json({
+      message: 'Failed to confirm pothole',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Get confirmations for a pothole
+router.get('/:id/confirmations', async (req, res) => {
+  try {
+    const confirmations = await ConfirmationModel.find({
+      potholeId: req.params.id
+    })
+    .populate('userId', 'username')
+    .sort({ confirmedAt: -1 });
+
+    const summary = {
+      still_there: confirmations.filter(c => c.status === 'still_there').length,
+      not_there: confirmations.filter(c => c.status === 'not_there').length,
+      total: confirmations.length
+    };
+
+    res.json({
+      message: 'Confirmations retrieved successfully',
+      data: {
+        confirmations,
+        summary
+      }
+    });
+  } catch (error) {
+    console.error('Get confirmations error:', error);
+    res.status(500).json({
+      message: 'Failed to retrieve confirmations',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Admin only: Verify pothole (updated to check admin role)
+router.patch('/:id/admin-verify', async (req, res) => {
+  try {
+    const { verified, userId } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: 'User must be logged in'
+      });
+    }
+
+    // Check if user is admin
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found'
+      });
+    }
+
+    if (user.role !== 'admin') {
+      return res.status(403).json({
+        message: 'Only admins can verify potholes'
+      });
+    }
+
+    if (typeof verified !== 'boolean') {
+      return res.status(400).json({
+        message: 'Verified field must be a boolean'
+      });
+    }
+
+    const pothole = await PotholeModel.findByIdAndUpdate(
+      req.params.id,
+      { verified, updatedAt: new Date() },
+      { new: true }
+    );
+
+    if (!pothole) {
+      return res.status(404).json({
+        message: 'Pothole not found'
+      });
+    }
+
+    res.json({
+      message: 'Pothole verification status updated by admin',
+      data: pothole
+    });
+  } catch (error) {
+    console.error('Admin verify pothole error:', error);
+    res.status(500).json({
+      message: 'Failed to update pothole verification',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

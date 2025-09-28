@@ -13,8 +13,10 @@ import { auth, googleProvider } from "@/config/firebase";
 const LoginResponseSchema = zod.object({
   message: zod.string(),
   data: zod.object({
+    id: zod.string(),
     username: zod.string(),
     email: zod.string(),
+    role: zod.enum(['user', 'admin']).default('user'),
     avatarUrl: zod.string().optional(),
   }),
 });
@@ -22,8 +24,10 @@ const LoginResponseSchema = zod.object({
 const SignUpResponseSchema = zod.object({
   message: zod.string(),
   data: zod.object({
+    id: zod.string(),
     username: zod.string(),
     email: zod.string(),
+    role: zod.enum(['user', 'admin']).default('user'),
   }),
 });
 
@@ -33,8 +37,10 @@ const LogoutResponseSchema = zod.object({
 });
 
 type User = {
+  id: string;
   email: string;
-  username?: string;
+  username: string;
+  role: 'user' | 'admin';
   avatarUrl?: string;
 };
 
