@@ -34,7 +34,6 @@ class CloudStorageService {
           contentType: 'image/jpeg',
           cacheControl: 'public, max-age=31536000', // Cache for 1 year
         },
-        public: true, // Make the file publicly accessible
         resumable: false, // Use simple upload for small files
       });
 
@@ -46,18 +45,18 @@ class CloudStorageService {
 
         stream.on('finish', async () => {
           try {
-            // Make the file public
-            await file.makePublic();
-
-            // Generate the public URL
-            const publicUrl = `https://storage.googleapis.com/${this.bucketName}/potholes/${fileName}`;
+            // Generate a signed URL for public access (valid for 1 year)
+            const [signedUrl] = await file.getSignedUrl({
+              action: 'read',
+              expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year from now
+            });
 
             console.log(`✅ GCS upload successful!`);
-            console.log(`   Public URL: ${publicUrl}`);
+            console.log(`   Signed URL: ${signedUrl.substring(0, 100)}...`);
 
-            resolve(publicUrl);
+            resolve(signedUrl);
           } catch (error) {
-            console.error('🚨 Error making file public:', error);
+            console.error('🚨 Error generating signed URL:', error);
             reject(error);
           }
         });
