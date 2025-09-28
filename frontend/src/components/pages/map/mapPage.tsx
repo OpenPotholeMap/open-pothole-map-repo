@@ -506,7 +506,6 @@ const MapHandler = ({
   marker,
   onBoundsChanged,
   isDriving,
-  userBearing,
 }: MapHandlerProps) => {
   const map = useMap();
 
