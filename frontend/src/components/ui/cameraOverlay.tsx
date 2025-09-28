@@ -9,13 +9,23 @@ interface CameraOverlayProps {
   onPotholeDetected?: (count: number) => void;
 }
 
-const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetected }: CameraOverlayProps) => {
+const CameraOverlay = ({
+  onClose,
+  potholeCount,
+  onLocationUpdate,
+  onPotholeDetected,
+}: CameraOverlayProps) => {
   const [isStreaming, setIsStreaming] = useState(false);
-  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>(
+    []
+  );
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const [showCameraList, setShowCameraList] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -32,22 +42,21 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
 
         // Set up event listeners
         socketService.onPotholeDetected((detection) => {
-          console.log('Pothole detected:', detection);
+          console.log("Pothole detected:", detection);
           if (onPotholeDetected) {
             onPotholeDetected(1); // Increment count by 1
           }
         });
 
         socketService.onDetectionError((error) => {
-          console.error('Detection error:', error);
+          console.error("Detection error:", error);
         });
 
         // Start detection session
         const session = await socketService.startDetection();
         setSessionId(session.sessionId);
-
       } catch (error) {
-        console.error('Socket connection error:', error);
+        console.error("Socket connection error:", error);
       }
     };
 
@@ -66,13 +75,15 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
     const getCameras = async () => {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter(device => device.kind === 'videoinput');
+        const cameras = devices.filter(
+          (device) => device.kind === "videoinput"
+        );
         setAvailableCameras(cameras);
         if (cameras.length > 0 && !selectedCameraId) {
           setSelectedCameraId(cameras[0].deviceId);
         }
       } catch (error) {
-        console.error('Error getting cameras:', error);
+        console.error("Error getting cameras:", error);
       }
     };
 
@@ -81,13 +92,18 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
 
   // Capture and send frames
   const captureFrame = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current || !currentLocation || !isConnected) {
+    if (
+      !videoRef.current ||
+      !canvasRef.current ||
+      !currentLocation ||
+      !isConnected
+    ) {
       return;
     }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
 
     if (!ctx || video.videoWidth === 0 || video.videoHeight === 0) {
       return;
@@ -101,12 +117,12 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
     ctx.drawImage(video, 0, 0);
 
     // Convert to base64 JPEG
-    const frameData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+    const frameData = canvas.toDataURL("image/jpeg", 0.8).split(",")[1];
 
     // Send frame to backend (convert lat/lng to latitude/longitude)
     socketService.sendFrame(frameData, {
       latitude: currentLocation.lat,
-      longitude: currentLocation.lng
+      longitude: currentLocation.lng,
     });
   }, [currentLocation, isConnected]);
 
@@ -116,10 +132,12 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
       try {
         const constraints = {
           video: {
-            deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined,
+            deviceId: selectedCameraId
+              ? { exact: selectedCameraId }
+              : undefined,
             width: { ideal: 640 },
-            height: { ideal: 480 }
-          }
+            height: { ideal: 480 },
+          },
         };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -133,7 +151,7 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
           frameIntervalRef.current = setInterval(captureFrame, 2000);
         }
       } catch (error) {
-        console.error('Error starting camera:', error);
+        console.error("Error starting camera:", error);
       }
     };
 
@@ -141,7 +159,7 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
 
     return () => {
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
       if (frameIntervalRef.current) {
         clearInterval(frameIntervalRef.current);
@@ -157,14 +175,14 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
       (position) => {
         const newLocation = {
           lat: position.coords.latitude,
-          lng: position.coords.longitude
+          lng: position.coords.longitude,
         };
         setCurrentLocation(newLocation);
         if (onLocationUpdate) {
           onLocationUpdate(newLocation);
         }
       },
-      (error) => console.error('Location error:', error),
+      (error) => console.error("Location error:", error),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
     );
 
@@ -174,7 +192,7 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
   const handleStopCamera = async () => {
     // Stop video stream
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
     }
 
     // Clear frame interval
@@ -197,12 +215,14 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
   };
 
   return (
-    <div className="fixed bottom-6 left-6 z-50
-                    w-72 h-48
-                    sm:w-80 sm:h-60
-                    md:w-96 md:h-72
-                    max-sm:w-64 max-sm:h-80
-                    bg-black rounded-lg overflow-hidden shadow-xl">
+    <div
+      className="
+      fixed bottom-6 left-6 z-50
+      w-64 h-40       /* default mobile size */
+      sm:w-60 sm:h-50  /* small screens */
+      md:w-96 md:h-60  /* medium+ screens */
+      bg-black rounded-lg overflow-hidden shadow-xl
+    ">
       {/* Detection Badge */}
       <div className="absolute top-3 left-3 right-3 flex justify-center">
         <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
@@ -258,9 +278,10 @@ const CameraOverlay = ({ onClose, potholeCount, onLocationUpdate, onPotholeDetec
                   key={camera.deviceId}
                   onClick={() => handleCameraChange(camera.deviceId)}
                   className={`w-full px-4 py-2 text-left hover:bg-gray-700 transition-colors duration-200 ${
-                    selectedCameraId === camera.deviceId ? 'bg-gray-700' : ''
+                    selectedCameraId === camera.deviceId ? "bg-gray-700" : ""
                   }`}>
-                  {camera.label || `Camera ${availableCameras.indexOf(camera) + 1}`}
+                  {camera.label ||
+                    `Camera ${availableCameras.indexOf(camera) + 1}`}
                 </button>
               ))}
             </div>
