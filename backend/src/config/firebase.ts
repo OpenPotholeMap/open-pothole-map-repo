@@ -1,18 +1,20 @@
-import { initializeApp, applicationDefault, cert } from "firebase-admin/app";
-import { FIREBASE_APPLICATION_CREDENTIALS } from "./envs";
+import { initializeApp, cert, getApps } from "firebase-admin/app";
 
-let credentials;
+const getFirebaseApp = () => {
+  if (!getApps().length) {
+    const decoded = Buffer.from(
+      process.env.FIREBASE_APPLICATION_CREDENTIALS!,
+      "base64"
+    ).toString("utf8");
 
-if (FIREBASE_APPLICATION_CREDENTIALS) {
-  const decoded = Buffer.from(
-    FIREBASE_APPLICATION_CREDENTIALS,
-    "base64"
-  ).toString("utf8");
-  credentials = JSON.parse(decoded);
-}
+    const credentials = JSON.parse(decoded);
+    credentials.private_key = credentials.private_key.replace(/\\n/g, "\n");
 
-const firebaseApp = initializeApp({
-  credential: credentials ? cert(credentials) : applicationDefault(),
-});
+    return initializeApp({
+      credential: cert(credentials),
+    });
+  }
+  return getApps()[0];
+};
 
-export default firebaseApp;
+export default getFirebaseApp();
