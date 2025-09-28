@@ -1,16 +1,36 @@
-import { Storage } from '@google-cloud/storage';
-import { GOOGLE_CLOUD_BUCKET, GOOGLE_APPLICATION_CREDENTIALS } from '@/config/envs.js';
+import { Storage } from "@google-cloud/storage";
+import {
+  GOOGLE_CLOUD_BUCKET,
+  GOOGLE_APPLICATION_CREDENTIALS,
+} from "@/config/envs.js";
 
 class CloudStorageService {
   private storage: Storage;
   private bucketName: string;
 
   constructor() {
-    // Initialize Google Cloud Storage client
-    this.storage = new Storage({
-      keyFilename: GOOGLE_APPLICATION_CREDENTIALS, // Optional: uses default credentials if not specified
-    });
-    this.bucketName = GOOGLE_CLOUD_BUCKET;
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      throw new Error("Missing GOOGLE_APPLICATION_CREDENTIALS_BASE64 env var");
+    }
+
+    // Decode JSON from base64
+    const decoded = Buffer.from(
+      process.env.GOOGLE_APPLICATION_CREDENTIALS,
+      "base64"
+    ).toString("utf8");
+
+    const credentials = JSON.parse(decoded);
+
+    // Fix private_key line breaks (important!)
+    credentials.private_key = credentials.private_key.replace(/\\n/g, "\n");
+
+    // Initialize client using credentials object
+    this.storage = new Storage({ credentials });
+    this.bucketName = process.env.GOOGLE_CLOUD_BUCKET!;
+  }
+
+  getBucket() {
+    return this.storage.bucket(this.bucketName);
   }
 
   /**
@@ -31,23 +51,23 @@ class CloudStorageService {
       // Create a write stream to upload the buffer
       const stream = file.createWriteStream({
         metadata: {
-          contentType: 'image/jpeg',
-          cacheControl: 'public, max-age=31536000', // Cache for 1 year
+          contentType: "image/jpeg",
+          cacheControl: "public, max-age=31536000", // Cache for 1 year
         },
         resumable: false, // Use simple upload for small files
       });
 
       return new Promise((resolve, reject) => {
-        stream.on('error', (error) => {
-          console.error('🚨 GCS upload error:', error);
+        stream.on("error", (error) => {
+          console.error("🚨 GCS upload error:", error);
           reject(error);
         });
 
-        stream.on('finish', async () => {
+        stream.on("finish", async () => {
           try {
             // Generate a signed URL for public access (valid for 1 year)
             const [signedUrl] = await file.getSignedUrl({
-              action: 'read',
+              action: "read",
               expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year from now
             });
 
@@ -56,7 +76,7 @@ class CloudStorageService {
 
             resolve(signedUrl);
           } catch (error) {
-            console.error('🚨 Error generating signed URL:', error);
+            console.error("🚨 Error generating signed URL:", error);
             reject(error);
           }
         });
@@ -65,7 +85,7 @@ class CloudStorageService {
         stream.end(imageBuffer);
       });
     } catch (error) {
-      console.error('🚨 GCS upload failed:', error);
+      console.error("🚨 GCS upload failed:", error);
       throw error;
     }
   }
@@ -77,7 +97,11 @@ class CloudStorageService {
    * @param confidence - Detection confidence score
    * @returns string - Unique filename
    */
-  generateFileName(latitude: number, longitude: number, confidence: number): string {
+  generateFileName(
+    latitude: number,
+    longitude: number,
+    confidence: number
+  ): string {
     const timestamp = Date.now();
     const lat = latitude.toFixed(6);
     const lng = longitude.toFixed(6);
@@ -103,7 +127,7 @@ class CloudStorageService {
       console.log(`✅ Image deleted successfully: ${fileName}`);
       return true;
     } catch (error) {
-      console.error('🚨 Error deleting image:', error);
+      console.error("🚨 Error deleting image:", error);
       return false;
     }
   }
@@ -127,7 +151,7 @@ class CloudStorageService {
       console.log(`✅ Bucket access confirmed: ${this.bucketName}`);
       return true;
     } catch (error) {
-      console.error('🚨 Bucket access check failed:', error);
+      console.error("🚨 Bucket access check failed:", error);
       return false;
     }
   }
