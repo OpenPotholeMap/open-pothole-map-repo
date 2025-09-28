@@ -17,6 +17,7 @@
   "type": "module",
   "$schema": "http://json.schemastore.org/package",
   "dependencies": {
+    "@google-cloud/storage": "^7.17.1",
     "@types/multer": "^2.0.0",
     "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
@@ -30,6 +31,7 @@
     "multer": "^2.0.2",
     "sharp": "^0.34.4",
     "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "tsc-alias": "^1.8.16",
     "zod": "^4.0.17"
   },
