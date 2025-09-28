@@ -11,3 +11,5 @@ AuthRoutes.post("/login", wrappedHandlers([AuthController.login]));
 AuthRoutes.post("/google", wrappedHandlers([AuthController.googleLogin]));
 
 AuthRoutes.post("/logout", wrappedHandlers([AuthController.logout]));
+
+AuthRoutes.get("/me", wrappedHandlers([AuthController.me]));

@@ -10,7 +10,24 @@ export interface Pothole {
   detectedAt: string;
   verified: boolean;
   detectionCount: number;
-  imageUrl: string;
+  images: string[];
+}
+
+export interface Confirmation {
+  _id: string;
+  potholeId: string;
+  userId: {
+    _id: string;
+    username: string;
+  };
+  status: 'still_there' | 'not_there';
+  confirmedAt: string;
+}
+
+export interface ConfirmationSummary {
+  still_there: number;
+  not_there: number;
+  total: number;
 }
 
 class PotholeService {
@@ -87,7 +104,7 @@ class PotholeService {
     latitude: number;
     longitude: number;
     confidenceScore?: number;
-    imageUrl?: string;
+    images?: string[];
     verified?: boolean;
     detectionCount?: number;
   }): Promise<Pothole | null> {
@@ -97,6 +114,45 @@ class PotholeService {
     } catch (error) {
       console.error('Error creating pothole:', error);
       return null;
+    }
+  }
+
+  /**
+   * Confirm pothole status (logged in users only)
+   */
+  async confirmPothole(id: string, status: 'still_there' | 'not_there', userId: string): Promise<boolean> {
+    try {
+      await this.apiClient.post(`/potholes/${id}/confirm`, { status, userId });
+      return true;
+    } catch (error) {
+      console.error('Error confirming pothole:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get confirmations for a pothole
+   */
+  async getConfirmations(id: string): Promise<{ confirmations: Confirmation[], summary: ConfirmationSummary } | null> {
+    try {
+      const response = await this.apiClient.get(`/potholes/${id}/confirmations`);
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching confirmations:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Admin verification (admin users only)
+   */
+  async adminVerifyPothole(id: string, verified: boolean, userId: string): Promise<boolean> {
+    try {
+      await this.apiClient.patch(`/potholes/${id}/admin-verify`, { verified, userId });
+      return true;
+    } catch (error) {
+      console.error('Error admin verifying pothole:', error);
+      return false;
     }
   }
 }

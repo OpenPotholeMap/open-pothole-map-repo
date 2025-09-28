@@ -5,7 +5,7 @@ export interface IPothole extends Document {
   longitude: number;
   detectedAt: Date;
   confidenceScore: number;
-  imageUrl: string;
+  images: string[];
   userId?: mongoose.Types.ObjectId;
   verified: boolean;
   detectionCount: number;
@@ -37,9 +37,9 @@ const PotholeSchema = new mongoose.Schema<IPothole>({
     min: 0,
     max: 1
   },
-  imageUrl: {
-    type: String,
-    required: true
+  images: {
+    type: [String],
+    default: []
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,

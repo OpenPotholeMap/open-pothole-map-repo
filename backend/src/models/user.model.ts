@@ -6,6 +6,7 @@ export interface IUser extends Document {
   encryptedPassword?: string;
   username: string;
   avatarUrl?: string;
+  role: 'user' | 'admin';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,6 +17,7 @@ const UserSchema = new mongoose.Schema<IUser>({
   encryptedPassword: { type: String, required: false },
   username: { type: String, required: true },
   avatarUrl: { type: String, required: false },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

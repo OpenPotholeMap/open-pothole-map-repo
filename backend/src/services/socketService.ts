@@ -51,6 +51,9 @@ class SocketService {
 
       // Handle frame processing
       socket.on('detection:frame', async (data: DetectionSocketData) => {
+        console.log(`🎬 Received detection:frame event from client ${socket.id}`);
+        console.log(`   Frame data size: ${data.frame ? data.frame.length : 'NO_FRAME'} characters`);
+        console.log(`   Location data: ${data.location ? JSON.stringify(data.location) : 'NO_LOCATION'}`);
         this.handleFrameProcessing(socket, data);
       });
 
