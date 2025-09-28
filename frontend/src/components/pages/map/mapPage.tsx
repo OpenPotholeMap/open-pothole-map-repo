@@ -1,4 +1,5 @@
 import { useTheme } from "@/contexts/theme-context";
+import { useAuth } from "@/context/authContext";
 import {
   AdvancedMarker,
   Map,
@@ -23,6 +24,7 @@ import Direction from "./direction";
 // Main Map Page Component
 const MapPage = () => {
   const { theme } = useTheme();
+  const { user } = useAuth();
 
   const [userLocation, setUserLocation] = useState<{
     lat: number;
@@ -317,8 +319,7 @@ const MapPage = () => {
                   detectedAt: newPothole.detectedAt,
                   verified: newPothole.verified,
                   detectionCount: newPothole.detectionCount || 1,
-                  imageUrl:
-                    newPothole.imageUrl || `placeholder_${Date.now()}.jpg`,
+                  images: newPothole.images || [],
                 },
               ];
             }
@@ -407,6 +408,7 @@ const MapPage = () => {
               key={pothole._id}
               pothole={pothole}
               onVerificationUpdate={handleVerificationUpdate}
+              currentUser={user}
             />
           ))}
         </Map>
