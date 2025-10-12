@@ -149,7 +149,7 @@ const CameraOverlay = ({
 
         // Create abort controller for timeout handling
         const abortController = new AbortController();
-        const timeoutId = setTimeout(() => abortController.abort(), 10000); // 10 second timeout
+        setTimeout(() => abortController.abort(), 10000); // 10 second timeout
 
         let constraints = {
           video: {

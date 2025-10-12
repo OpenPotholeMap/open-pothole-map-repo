@@ -20,7 +20,6 @@ import { calculateDistance, isPotholeAhead } from "@/utils/geoUtils";
 import BottomRightButtons from "./bottomRightButtons";
 import type { LocationDrawerRef } from "./locationDrawer";
 import Direction from "./direction";
-import { demoLocationService } from "@/services/demoLocationService";
 import { useCompass } from "./authHook";
 
 // Main Map Page Component
