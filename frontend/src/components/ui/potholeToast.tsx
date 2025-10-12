@@ -12,7 +12,6 @@ const PotholeToast = ({
   isVisible,
   distance,
   onDismiss,
-  autoHideDuration = 5000,
 }: PotholeToastProps) => {
   const [show, setShow] = useState(false);
 
@@ -34,13 +33,16 @@ const PotholeToast = ({
         bg-red-500 text-white px-6 py-4 rounded-lg shadow-2xl border-2 border-red-600
         flex items-center space-x-3 min-w-80 max-w-md
         transition-all duration-300 ease-in-out
-        ${show ? "translate-y-0 opacity-100 scale-100" : "-translate-y-full opacity-0 scale-95"}
+        ${
+          show
+            ? "translate-y-0 opacity-100 scale-100"
+            : "-translate-y-full opacity-0 scale-95"
+        }
       `}
       style={{
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
-        backdropFilter: 'blur(4px)'
-      }}
-    >
+        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+        backdropFilter: "blur(4px)",
+      }}>
       <AlertTriangle className="w-6 h-6 flex-shrink-0" />
       <div className="flex-1">
         <div className="font-bold text-lg">⚠️ POTHOLE AHEAD!</div>
@@ -48,8 +50,7 @@ const PotholeToast = ({
           <div className="text-sm opacity-90 font-medium">
             {distance < 100
               ? `${Math.round(distance)}m ahead`
-              : `${(distance / 1000).toFixed(1)}km ahead`
-            }
+              : `${(distance / 1000).toFixed(1)}km ahead`}
           </div>
         )}
         <div className="text-xs opacity-75 mt-1">
@@ -62,8 +63,7 @@ const PotholeToast = ({
           setTimeout(onDismiss, 300);
         }}
         className="text-white hover:text-gray-200 transition-colors"
-        aria-label="Dismiss warning"
-      >
+        aria-label="Dismiss warning">
         <X className="w-5 h-5" />
       </button>
     </div>

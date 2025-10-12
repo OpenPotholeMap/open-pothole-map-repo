@@ -2,6 +2,18 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Camera, Square } from "lucide-react";
 import { socketService } from "@/services/socketService";
 
+// Extend Window interface to include demoLocation
+declare global {
+  interface Window {
+    demoLocation?: {
+      status: () => {
+        active: boolean;
+        currentLocation?: { lat: number; lng: number };
+      };
+    };
+  }
+}
+
 interface CameraOverlayProps {
   onClose: () => void;
   potholeCount: number;
@@ -137,7 +149,7 @@ const CameraOverlay = ({
 
         // Create abort controller for timeout handling
         const abortController = new AbortController();
-        const timeoutId = setTimeout(() => abortController.abort(), 10000); // 10 second timeout
+        setTimeout(() => abortController.abort(), 10000); // 10 second timeout
 
         let constraints = {
           video: {
@@ -149,6 +161,7 @@ const CameraOverlay = ({
           },
         };
 
+<<<<<<< HEAD
         let stream: MediaStream;
 
         try {
@@ -183,6 +196,9 @@ const CameraOverlay = ({
         }
 
         clearTimeout(timeoutId);
+=======
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+>>>>>>> 21fdcf800b7f2e3a2d0ff3829d8949da3b4d1db4
         streamRef.current = stream;
 
         if (videoRef.current) {
@@ -202,7 +218,11 @@ const CameraOverlay = ({
 
         // Set user-friendly error message
         let errorMessage = "Unknown camera error";
+<<<<<<< HEAD
         if (error instanceof Error) {
+=======
+        if (error instanceof DOMException || error instanceof Error) {
+>>>>>>> 21fdcf800b7f2e3a2d0ff3829d8949da3b4d1db4
           if (error.name === "NotAllowedError") {
             errorMessage =
               "Camera access denied. Please enable camera permissions.";
@@ -267,6 +287,7 @@ const CameraOverlay = ({
 
     // Check for demo location first
     const updateLocation = () => {
+<<<<<<< HEAD
       const demoLocation = getDemoLocation();
       if (demoLocation) {
         console.log("Using demo location:", demoLocation);
@@ -276,6 +297,17 @@ const CameraOverlay = ({
         }
         return;
       }
+=======
+      // const demoLocation = getDemoLocation();
+      // if (demoLocation) {
+      //   console.log("Using demo location:", demoLocation);
+      //   setCurrentLocation(demoLocation);
+      //   if (onLocationUpdate) {
+      //     onLocationUpdate(demoLocation);
+      //   }
+      //   return;
+      // }
+>>>>>>> 21fdcf800b7f2e3a2d0ff3829d8949da3b4d1db4
 
       // Fall back to real GPS location if no demo location
       navigator.geolocation.getCurrentPosition(
@@ -361,12 +393,22 @@ const CameraOverlay = ({
 
   return (
     <div
+<<<<<<< HEAD
       className="fixed bottom-6 left-6 z-50
                     w-72 h-48
                     sm:w-80 sm:h-60
                     md:w-96 md:h-72
                     max-sm:w-64 max-sm:h-80
                     bg-black rounded-lg overflow-hidden shadow-xl">
+=======
+      className="
+      fixed bottom-6 left-6 z-50
+      w-64 h-40       /* default mobile size */
+      sm:w-60 sm:h-50  /* small screens */
+      md:w-96 md:h-60  /* medium+ screens */
+      bg-black rounded-lg overflow-hidden shadow-xl
+    ">
+>>>>>>> 21fdcf800b7f2e3a2d0ff3829d8949da3b4d1db4
       {/* Detection Badge */}
       <div className="absolute top-3 left-3 right-3 flex justify-center">
         <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">

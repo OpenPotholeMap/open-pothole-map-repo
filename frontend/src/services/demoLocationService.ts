@@ -27,6 +27,7 @@ class DemoLocationService {
   private startTime = 0;
   private currentLat = 0;
   private currentLng = 0;
+  // private targetSegmentIndex = 0;
   private updateInterval = 100; // Update every 100ms for smooth movement
 
   // Predefined demo routes
@@ -103,6 +104,7 @@ class DemoLocationService {
 
     // Initialize smooth movement
     this.startTime = Date.now();
+    // this.targetSegmentIndex = 0;
     this.currentLat = route.points[0].lat;
     this.currentLng = route.points[0].lng;
 

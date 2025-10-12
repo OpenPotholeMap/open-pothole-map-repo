@@ -25,7 +25,9 @@ class SocketService {
   private socket: Socket | null = null;
   private isConnected = false;
 
-  connect(serverUrl: string = "http://localhost:8000"): Promise<void> {
+  connect(
+    serverUrl: string = `${import.meta.env.VITE_API_URL}`
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       this.socket = io(serverUrl, {
         transports: ["websocket"],
