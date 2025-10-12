@@ -27,6 +27,8 @@ const CameraOverlay = ({
     lng: number;
   } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -130,7 +132,14 @@ const CameraOverlay = ({
   useEffect(() => {
     const startStream = async () => {
       try {
-        const constraints = {
+        setIsInitializing(true);
+        setCameraError(null);
+
+        // Create abort controller for timeout handling
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 10000); // 10 second timeout
+
+        let constraints = {
           video: {
             deviceId: selectedCameraId
               ? { exact: selectedCameraId }
@@ -145,17 +154,40 @@ const CameraOverlay = ({
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          setIsStreaming(true);
 
-          // Start sending frames every 2 seconds
-          frameIntervalRef.current = setInterval(captureFrame, 2000);
+          // Wait for video to load before setting streaming state
+          videoRef.current.onloadedmetadata = () => {
+            setIsStreaming(true);
+            setIsInitializing(false);
+            // Start sending frames every 2 seconds
+            frameIntervalRef.current = setInterval(captureFrame, 250);
+          };
         }
       } catch (error) {
         console.error("Error starting camera:", error);
+        setIsInitializing(false);
+
+        // Set user-friendly error message
+        let errorMessage = "Unknown camera error";
+        if (error.name === "NotAllowedError") {
+          errorMessage =
+            "Camera access denied. Please enable camera permissions.";
+        } else if (error.name === "NotFoundError") {
+          errorMessage =
+            "No camera found. Please ensure a camera is connected.";
+        } else if (error.name === "AbortError") {
+          errorMessage = "Camera startup timed out. Please try again.";
+        } else if (error.message) {
+          errorMessage = `Camera error: ${error.message}`;
+        }
+
+        setCameraError(errorMessage);
       }
     };
 
-    startStream();
+    if (selectedCameraId !== undefined) {
+      startStream();
+    }
 
     return () => {
       if (streamRef.current) {
@@ -172,34 +204,91 @@ const CameraOverlay = ({
 
     frameIntervalRef.current = setInterval(() => {
       captureFrame();
-    }, 2000);
+    }, 50);
 
     return () => {
       if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
     };
   }, [isStreaming, currentLocation, isConnected]); // dependent on streaming & location
 
+  // Check if demo script is active and get mock location
+  const getDemoLocation = useCallback(() => {
+    // Check if the demo script is active and has current location
+    if (window.demoLocation) {
+      const status = window.demoLocation.status();
+      if (status.active && status.currentLocation) {
+        return {
+          lat: status.currentLocation.lat,
+          lng: status.currentLocation.lng,
+        };
+      }
+    }
+    return null;
+  }, []);
+
   // Get and send location updates
   useEffect(() => {
     if (!isStreaming) return;
 
+    // Check for demo location first
+    const updateLocation = () => {
+      const demoLocation = getDemoLocation();
+      if (demoLocation) {
+        console.log("Using demo location:", demoLocation);
+        setCurrentLocation(demoLocation);
+        if (onLocationUpdate) {
+          onLocationUpdate(demoLocation);
+        }
+        return;
+      }
+
+      // Fall back to real GPS location if no demo location
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setCurrentLocation(newLocation);
+          if (onLocationUpdate) {
+            onLocationUpdate(newLocation);
+          }
+        },
+        (error) => console.error("Location error:", error),
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+      );
+    };
+
+    // Update location immediately
+    updateLocation();
+
+    // Set up interval to check for location updates
+    const locationInterval = setInterval(updateLocation, 1000); // Check every second
+
+    // Also set up GPS watching as fallback when demo is not active
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        const newLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-        setCurrentLocation(newLocation);
-        if (onLocationUpdate) {
-          onLocationUpdate(newLocation);
+        // Only use GPS if demo is not active
+        if (!getDemoLocation()) {
+          const newLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setCurrentLocation(newLocation);
+          if (onLocationUpdate) {
+            onLocationUpdate(newLocation);
+          }
         }
       },
       (error) => console.error("Location error:", error),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
     );
 
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, [isStreaming, onLocationUpdate]);
+    return () => {
+      clearInterval(locationInterval);
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [isStreaming, onLocationUpdate, getDemoLocation]);
 
   const handleStopCamera = async () => {
     // Stop video stream
@@ -224,6 +313,15 @@ const CameraOverlay = ({
   const handleCameraChange = (cameraId: string) => {
     setSelectedCameraId(cameraId);
     setShowCameraList(false);
+  };
+
+  const handleRetry = () => {
+    setCameraError(null);
+    setIsInitializing(true);
+    // Reset selected camera to trigger re-initialization
+    setSelectedCameraId(
+      availableCameras.length > 0 ? availableCameras[0].deviceId : ""
+    );
   };
 
   return (
@@ -302,9 +400,29 @@ const CameraOverlay = ({
       </div>
 
       {/* Loading State */}
-      {!isStreaming && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="text-white">Starting camera...</div>
+      {isInitializing && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="text-white text-center">
+            <div className="mb-2">Starting camera...</div>
+            <div className="text-sm text-gray-300">
+              This may take a few seconds
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {cameraError && !isInitializing && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="text-center px-4">
+            <div className="text-red-400 mb-3">📷</div>
+            <div className="text-white text-sm mb-3">{cameraError}</div>
+            <button
+              onClick={handleRetry}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors duration-200">
+              Retry
+            </button>
+          </div>
         </div>
       )}
     </div>

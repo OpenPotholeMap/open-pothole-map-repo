@@ -29,7 +29,7 @@ export interface PotholeDetection {
 }
 
 class DetectionService {
-  private readonly CONFIDENCE_THRESHOLD = 0.7;
+  private readonly CONFIDENCE_THRESHOLD = 0.2;
   private readonly CLUSTERING_DISTANCE = 10; // meters
 
   constructor() {
