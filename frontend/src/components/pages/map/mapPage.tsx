@@ -20,11 +20,15 @@ import { calculateDistance, isPotholeAhead } from "@/utils/geoUtils";
 import BottomRightButtons from "./bottomRightButtons";
 import type { LocationDrawerRef } from "./locationDrawer";
 import Direction from "./direction";
+import { useCompass } from "./authHook";
 
 // Main Map Page Component
 const MapPage = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
+
+  // Compass hook for device orientation
+  const { heading, needsPermission, requestPermission } = useCompass();
 
   const [userLocation, setUserLocation] = useState<{
     lat: number;
@@ -65,10 +69,6 @@ const MapPage = () => {
   const [showPotholeWarning, setShowPotholeWarning] = useState(false);
   const [warningDistance, setWarningDistance] = useState<number>(0);
   const [userBearing, setUserBearing] = useState<number>(0);
-  const [lastUserLocation, setLastUserLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
   const [isLoadingPotholes, setIsLoadingPotholes] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const locationDrawerRef = useRef<LocationDrawerRef>(null);
@@ -166,42 +166,12 @@ const MapPage = () => {
     };
   }, []);
 
-  // Track bearing when driving
+  // Update user bearing from device compass heading
   useEffect(() => {
-    if (isDriving && lastUserLocation && userLocation) {
-      // Calculate bearing from previous to current location
-      const bearing = calculateBearing(
-        lastUserLocation.lat,
-        lastUserLocation.lng,
-        userLocation.lat,
-        userLocation.lng
-      );
-      setUserBearing(bearing);
+    if (heading !== undefined && heading !== null) {
+      setUserBearing(heading);
     }
-    setLastUserLocation(userLocation);
-
-    function calculateBearing(
-      lat1: number,
-      lng1: number,
-      lat2: number,
-      lng2: number
-    ): number {
-      const dLng = ((lng2 - lng1) * Math.PI) / 180;
-      const lat1Rad = (lat1 * Math.PI) / 180;
-      const lat2Rad = (lat2 * Math.PI) / 180;
-
-      const y = Math.sin(dLng) * Math.cos(lat2Rad);
-      const x =
-        Math.cos(lat1Rad) * Math.sin(lat2Rad) -
-        Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
-
-      let bearing = Math.atan2(y, x);
-      bearing = (bearing * 180) / Math.PI;
-      bearing = (bearing + 360) % 360;
-
-      return bearing;
-    }
-  }, [isDriving, lastUserLocation, userLocation]);
+  }, [heading]);
 
   const [markerRef, marker] = useAdvancedMarkerRef();
 
@@ -506,7 +476,7 @@ const MapPage = () => {
             selectedRouteIndex={selectedRouteIndex}
           />
           {/* User Location Marker */}
-          <CompassMarker position={userLocation} heading={0} />
+          <CompassMarker position={userLocation} heading={userBearing} />
           {/* Destination Marker */}
           {!selectedOrigin || !selectedDestination ? (
             <AdvancedMarker
@@ -574,10 +544,8 @@ const MapPage = () => {
           onLocationDrawerOpen={() => locationDrawerRef.current?.openDrawer()}
           onStopDriving={handleStopDriving}
           isDriving={isDriving}
-          needsPermission={false}
-          requestPermission={function (): void {
-            throw new Error("Function not implemented.");
-          }}
+          needsPermission={needsPermission}
+          requestPermission={requestPermission}
         />
 
         {isCameraActive && (
