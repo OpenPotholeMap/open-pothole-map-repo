@@ -638,7 +638,7 @@ const MapHandler = ({
       map.panTo(userlocation);
       map.setZoom(17);
       map.setTilt(65);
-    }, 1000);
+    }, 500);
 
     return () => clearInterval(interval);
   }, [map, userlocation, isDriving]);

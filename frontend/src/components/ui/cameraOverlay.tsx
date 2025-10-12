@@ -2,6 +2,18 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Camera, Square } from "lucide-react";
 import { socketService } from "@/services/socketService";
 
+// Extend Window interface to include demoLocation
+declare global {
+  interface Window {
+    demoLocation?: {
+      status: () => {
+        active: boolean;
+        currentLocation?: { lat: number; lng: number };
+      };
+    };
+  }
+}
+
 interface CameraOverlayProps {
   onClose: () => void;
   potholeCount: number;
@@ -169,16 +181,18 @@ const CameraOverlay = ({
 
         // Set user-friendly error message
         let errorMessage = "Unknown camera error";
-        if (error.name === "NotAllowedError") {
-          errorMessage =
-            "Camera access denied. Please enable camera permissions.";
-        } else if (error.name === "NotFoundError") {
-          errorMessage =
-            "No camera found. Please ensure a camera is connected.";
-        } else if (error.name === "AbortError") {
-          errorMessage = "Camera startup timed out. Please try again.";
-        } else if (error.message) {
-          errorMessage = `Camera error: ${error.message}`;
+        if (error instanceof DOMException || error instanceof Error) {
+          if (error.name === "NotAllowedError") {
+            errorMessage =
+              "Camera access denied. Please enable camera permissions.";
+          } else if (error.name === "NotFoundError") {
+            errorMessage =
+              "No camera found. Please ensure a camera is connected.";
+          } else if (error.name === "AbortError") {
+            errorMessage = "Camera startup timed out. Please try again.";
+          } else if (error.message) {
+            errorMessage = `Camera error: ${error.message}`;
+          }
         }
 
         setCameraError(errorMessage);
@@ -232,15 +246,15 @@ const CameraOverlay = ({
 
     // Check for demo location first
     const updateLocation = () => {
-      const demoLocation = getDemoLocation();
-      if (demoLocation) {
-        console.log("Using demo location:", demoLocation);
-        setCurrentLocation(demoLocation);
-        if (onLocationUpdate) {
-          onLocationUpdate(demoLocation);
-        }
-        return;
-      }
+      // const demoLocation = getDemoLocation();
+      // if (demoLocation) {
+      //   console.log("Using demo location:", demoLocation);
+      //   setCurrentLocation(demoLocation);
+      //   if (onLocationUpdate) {
+      //     onLocationUpdate(demoLocation);
+      //   }
+      //   return;
+      // }
 
       // Fall back to real GPS location if no demo location
       navigator.geolocation.getCurrentPosition(
