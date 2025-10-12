@@ -20,7 +20,7 @@ import { calculateDistance, isPotholeAhead } from "@/utils/geoUtils";
 import BottomRightButtons from "./bottomRightButtons";
 import type { LocationDrawerRef } from "./locationDrawer";
 import Direction from "./direction";
-import { demoLocationService } from "@/services/demoLocationService";
+import { useCompass } from "./authHook";
 
 // Main Map Page Component
 const MapPage = () => {
@@ -50,6 +50,9 @@ const MapPage = () => {
   );
   const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
 
+  // Compass state
+  const { heading, needsPermission, requestPermission } = useCompass();
+
   // Camera detection state
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [potholeCount, setPotholeCount] = useState(0);
@@ -76,7 +79,9 @@ const MapPage = () => {
 
   // Toast state management
   const [lastWarningTime, setLastWarningTime] = useState<number>(0);
-  const [currentWarningPothole, setCurrentWarningPothole] = useState<string | null>(null);
+  const [currentWarningPothole, setCurrentWarningPothole] = useState<
+    string | null
+  >(null);
   const toastCooldownRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -222,35 +227,35 @@ const MapPage = () => {
       // Create demo potholes along the demo routes
       potholesToCheck = [
         {
-          _id: 'demo-1',
-          latitude: 25.7920,
-          longitude: -80.2050,
+          _id: "demo-1",
+          latitude: 25.792,
+          longitude: -80.205,
           confidenceScore: 0.85,
           detectedAt: new Date().toISOString(),
           verified: true,
           detectionCount: 1,
-          images: []
+          images: [],
         },
         {
-          _id: 'demo-2',
-          latitude: 25.8100,
-          longitude: -80.2050,
-          confidenceScore: 0.90,
+          _id: "demo-2",
+          latitude: 25.81,
+          longitude: -80.205,
+          confidenceScore: 0.9,
           detectedAt: new Date().toISOString(),
           verified: true,
           detectionCount: 1,
-          images: []
+          images: [],
         },
         {
-          _id: 'demo-3',
-          latitude: 25.7800,
-          longitude: -80.2200,
+          _id: "demo-3",
+          latitude: 25.78,
+          longitude: -80.22,
           confidenceScore: 0.88,
           detectedAt: new Date().toISOString(),
           verified: true,
           detectionCount: 1,
-          images: []
-        }
+          images: [],
+        },
       ];
     }
 
@@ -299,14 +304,14 @@ const MapPage = () => {
       // Check if we should show warning for this pothole
       const shouldShowWarning =
         currentWarningPothole !== closestPothole._id ||
-        (now - lastWarningTime) > TOAST_COOLDOWN;
+        now - lastWarningTime > TOAST_COOLDOWN;
 
       if (shouldShowWarning && !showPotholeWarning) {
-        console.log('⚠️ WARNING: Pothole detected!', {
+        console.log("⚠️ WARNING: Pothole detected!", {
           distance: closestDistance,
           pothole: closestPothole._id,
           lastWarning: lastWarningTime,
-          timeSinceLastWarning: now - lastWarningTime
+          timeSinceLastWarning: now - lastWarningTime,
         });
 
         setWarningDistance(closestDistance);
@@ -331,14 +336,23 @@ const MapPage = () => {
         clearTimeout(toastCooldownRef.current);
       }
     };
-  }, [isDriving, userLocation, potholes, userBearing, showPotholeWarning, currentWarningPothole, lastWarningTime]);
+  }, [
+    isDriving,
+    userLocation,
+    potholes,
+    userBearing,
+    showPotholeWarning,
+    currentWarningPothole,
+    lastWarningTime,
+  ]);
 
   // Driving mode handlers
   const handleStartDriving = () => {
     // For demo purposes, allow driving mode without strict origin/destination requirements
-    const isDemoMode = window.location.search.includes('demo') ||
-                      localStorage.getItem('demo-mode') === 'true' ||
-                      userLocation?.lat === 25.7900; // Miami demo area
+    const isDemoMode =
+      window.location.search.includes("demo") ||
+      localStorage.getItem("demo-mode") === "true" ||
+      userLocation?.lat === 25.79; // Miami demo area
 
     if (!isDemoMode && (!selectedOrigin || !selectedDestination)) {
       alert(
@@ -496,7 +510,7 @@ const MapPage = () => {
             selectedRouteIndex={selectedRouteIndex}
           />
           {/* User Location Marker */}
-          <CompassMarker position={userLocation} />
+          <CompassMarker position={userLocation} heading={heading} />
           {/* Destination Marker */}
           {!selectedOrigin || !selectedDestination ? (
             <AdvancedMarker
@@ -564,6 +578,8 @@ const MapPage = () => {
           onLocationDrawerOpen={() => locationDrawerRef.current?.openDrawer()}
           onStopDriving={handleStopDriving}
           isDriving={isDriving}
+          needsPermission={needsPermission}
+          requestPermission={requestPermission}
         />
 
         {isCameraActive && (
@@ -621,7 +637,7 @@ const MapHandler = ({
       map.panTo(userlocation);
       map.setZoom(17);
       map.setTilt(65);
-    }, 1000);
+    }, 500);
 
     return () => clearInterval(interval);
   }, [map, userlocation, isDriving]);

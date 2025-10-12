@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export interface Pothole {
   _id: string;
@@ -20,7 +20,7 @@ export interface Confirmation {
     _id: string;
     username: string;
   };
-  status: 'still_there' | 'not_there';
+  status: "still_there" | "not_there";
   confirmedAt: string;
 }
 
@@ -41,12 +41,13 @@ class PotholeService {
    */
   async getPotholes(limit: number = 100): Promise<Pothole[]> {
     try {
-      const response = await this.apiClient.get('/potholes', {
-        params: { limit }
+      const response = await this.apiClient.get("/potholes", {
+        params: { limit },
       });
+      console.log("Fetched potholes:", response.data.data);
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching potholes:', error);
+      console.error("Error fetching potholes:", error);
       return [];
     }
   }
@@ -61,12 +62,12 @@ class PotholeService {
     west: number;
   }): Promise<Pothole[]> {
     try {
-      const response = await this.apiClient.get('/potholes/bounds', {
-        params: bounds
+      const response = await this.apiClient.get("/potholes/bounds", {
+        params: bounds,
       });
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching potholes in bounds:', error);
+      console.error("Error fetching potholes in bounds:", error);
       return [];
     }
   }
@@ -79,7 +80,7 @@ class PotholeService {
       const response = await this.apiClient.get(`/potholes/${id}`);
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching pothole:', error);
+      console.error("Error fetching pothole:", error);
       return null;
     }
   }
@@ -92,7 +93,7 @@ class PotholeService {
       await this.apiClient.patch(`/potholes/${id}/verify`, { verified });
       return true;
     } catch (error) {
-      console.error('Error updating verification:', error);
+      console.error("Error updating verification:", error);
       return false;
     }
   }
@@ -109,10 +110,10 @@ class PotholeService {
     detectionCount?: number;
   }): Promise<Pothole | null> {
     try {
-      const response = await this.apiClient.post('/potholes', data);
+      const response = await this.apiClient.post("/potholes", data);
       return response.data.data;
     } catch (error) {
-      console.error('Error creating pothole:', error);
+      console.error("Error creating pothole:", error);
       return null;
     }
   }
@@ -120,12 +121,16 @@ class PotholeService {
   /**
    * Confirm pothole status (logged in users only)
    */
-  async confirmPothole(id: string, status: 'still_there' | 'not_there', userId: string): Promise<boolean> {
+  async confirmPothole(
+    id: string,
+    status: "still_there" | "not_there",
+    userId: string
+  ): Promise<boolean> {
     try {
       await this.apiClient.post(`/potholes/${id}/confirm`, { status, userId });
       return true;
     } catch (error) {
-      console.error('Error confirming pothole:', error);
+      console.error("Error confirming pothole:", error);
       return false;
     }
   }
@@ -133,12 +138,17 @@ class PotholeService {
   /**
    * Get confirmations for a pothole
    */
-  async getConfirmations(id: string): Promise<{ confirmations: Confirmation[], summary: ConfirmationSummary } | null> {
+  async getConfirmations(id: string): Promise<{
+    confirmations: Confirmation[];
+    summary: ConfirmationSummary;
+  } | null> {
     try {
-      const response = await this.apiClient.get(`/potholes/${id}/confirmations`);
+      const response = await this.apiClient.get(
+        `/potholes/${id}/confirmations`
+      );
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching confirmations:', error);
+      console.error("Error fetching confirmations:", error);
       return null;
     }
   }
@@ -146,12 +156,19 @@ class PotholeService {
   /**
    * Admin verification (admin users only)
    */
-  async adminVerifyPothole(id: string, verified: boolean, userId: string): Promise<boolean> {
+  async adminVerifyPothole(
+    id: string,
+    verified: boolean,
+    userId: string
+  ): Promise<boolean> {
     try {
-      await this.apiClient.patch(`/potholes/${id}/admin-verify`, { verified, userId });
+      await this.apiClient.patch(`/potholes/${id}/admin-verify`, {
+        verified,
+        userId,
+      });
       return true;
     } catch (error) {
-      console.error('Error admin verifying pothole:', error);
+      console.error("Error admin verifying pothole:", error);
       return false;
     }
   }

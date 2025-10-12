@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Camera, Navigation, Square } from "lucide-react";
+import { Camera, Compass, Navigation, Square } from "lucide-react";
 
 interface BottomRightButtonsProps {
   onCameraClick: () => void;
@@ -7,6 +7,8 @@ interface BottomRightButtonsProps {
   onLocationDrawerOpen: () => void;
   onStopDriving: () => void;
   isDriving: boolean;
+  needsPermission: boolean;
+  requestPermission: () => void;
 }
 
 const BottomRightButtons = ({
@@ -15,9 +17,19 @@ const BottomRightButtons = ({
   onLocationDrawerOpen,
   onStopDriving,
   isDriving,
+  needsPermission,
+  requestPermission,
 }: BottomRightButtonsProps) => {
   return (
     <div className="fixed bottom-6 right-6 z-20 flex flex-col gap-3">
+      {needsPermission && (
+        <Button
+          onClick={requestPermission}
+          size="lg"
+          className="w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-lg">
+          <Compass className="w-6 h-6" stroke="currentColor" />
+        </Button>
+      )}
       {/* Stop Driving Button - Only show when driving */}
       {isDriving && (
         <Button

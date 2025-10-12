@@ -27,7 +27,7 @@ class DemoLocationService {
   private startTime = 0;
   private currentLat = 0;
   private currentLng = 0;
-  private targetSegmentIndex = 0;
+  // private targetSegmentIndex = 0;
   private updateInterval = 100; // Update every 100ms for smooth movement
 
   // Predefined demo routes
@@ -37,18 +37,18 @@ class DemoLocationService {
       description: "Drive from Miami Beach to Florida International University",
       points: [
         { lat: 25.7617, lng: -80.1918 }, // Miami Beach (Lincoln Road)
-        { lat: 25.7717, lng: -80.1850 }, // Moving west
-        { lat: 25.7800, lng: -80.1950 }, // Julia Tuttle Causeway
-        { lat: 25.7850, lng: -80.2100 }, // Cross bay
-        { lat: 25.7900, lng: -80.2200 }, // Mainland Miami
-        { lat: 25.7950, lng: -80.2300 }, // Moving southwest
-        { lat: 25.8000, lng: -80.2400 }, // Through Miami neighborhoods
-        { lat: 25.8100, lng: -80.2500 }, // Continuing west
-        { lat: 25.8200, lng: -80.2600 }, // Getting closer to FIU
-        { lat: 25.8300, lng: -80.2700 }, // Almost there
+        { lat: 25.7717, lng: -80.185 }, // Moving west
+        { lat: 25.78, lng: -80.195 }, // Julia Tuttle Causeway
+        { lat: 25.785, lng: -80.21 }, // Cross bay
+        { lat: 25.79, lng: -80.22 }, // Mainland Miami
+        { lat: 25.795, lng: -80.23 }, // Moving southwest
+        { lat: 25.8, lng: -80.24 }, // Through Miami neighborhoods
+        { lat: 25.81, lng: -80.25 }, // Continuing west
+        { lat: 25.82, lng: -80.26 }, // Getting closer to FIU
+        { lat: 25.83, lng: -80.27 }, // Almost there
         { lat: 25.7563, lng: -80.3759 }, // FIU Modesto Maidique Campus
       ],
-      duration: 180 // 3 minutes total for realistic demo
+      duration: 180, // 3 minutes total for realistic demo
     },
     {
       name: "Downtown Miami Circuit",
@@ -62,7 +62,7 @@ class DemoLocationService {
         { lat: 25.7743, lng: -80.2037 }, // Back to start area
         { lat: 25.7743, lng: -80.1937 }, // Complete the loop
       ],
-      duration: 120 // 2 minutes
+      duration: 120, // 2 minutes
     },
     {
       name: "Miami Airport to South Beach",
@@ -76,8 +76,8 @@ class DemoLocationService {
         { lat: 25.7432, lng: -80.1906 }, // Almost there
         { lat: 25.7332, lng: -80.1706 }, // South Beach area
       ],
-      duration: 150 // 2.5 minutes
-    }
+      duration: 150, // 2.5 minutes
+    },
   ];
 
   /**
@@ -90,7 +90,7 @@ class DemoLocationService {
     }
 
     const route = routeName
-      ? this.routes.find(r => r.name === routeName)
+      ? this.routes.find((r) => r.name === routeName)
       : this.routes[0];
 
     if (!route) {
@@ -104,13 +104,19 @@ class DemoLocationService {
 
     // Initialize smooth movement
     this.startTime = Date.now();
-    this.targetSegmentIndex = 0;
+    // this.targetSegmentIndex = 0;
     this.currentLat = route.points[0].lat;
     this.currentLng = route.points[0].lng;
 
     console.log(`🎬 Starting demo mode: ${route.name}`);
-    console.log(`📍 ${route.points.length} waypoints, ${route.duration}s duration, ${speed}x speed`);
-    console.log(`🎯 Starting at: ${this.currentLat.toFixed(6)}, ${this.currentLng.toFixed(6)}`);
+    console.log(
+      `📍 ${route.points.length} waypoints, ${route.duration}s duration, ${speed}x speed`
+    );
+    console.log(
+      `🎯 Starting at: ${this.currentLat.toFixed(6)}, ${this.currentLng.toFixed(
+        6
+      )}`
+    );
 
     this.startSmoothMovement();
     return true;
@@ -146,7 +152,7 @@ class DemoLocationService {
     return {
       lat: this.currentLat,
       lng: this.currentLng,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -210,7 +216,7 @@ class DemoLocationService {
     // Calculate new time based on progress
     const totalDuration = this.currentRoute.duration / this.speed;
     const newElapsed = clampedProgress * totalDuration;
-    this.startTime = Date.now() - (newElapsed * 1000);
+    this.startTime = Date.now() - newElapsed * 1000;
 
     // Update current position
     this.updateCurrentPosition();
@@ -286,8 +292,16 @@ class DemoLocationService {
     const endPoint = points[currentSegment + 1];
 
     // Linear interpolation between points
-    this.currentLat = this.lerp(startPoint.lat, endPoint.lat, withinSegmentProgress);
-    this.currentLng = this.lerp(startPoint.lng, endPoint.lng, withinSegmentProgress);
+    this.currentLat = this.lerp(
+      startPoint.lat,
+      endPoint.lat,
+      withinSegmentProgress
+    );
+    this.currentLng = this.lerp(
+      startPoint.lng,
+      endPoint.lng,
+      withinSegmentProgress
+    );
   }
 
   /**
@@ -311,7 +325,7 @@ class DemoLocationService {
    * Notify all subscribers of location update
    */
   private notifyCallbacks(location: DemoLocation): void {
-    this.callbacks.forEach(callback => {
+    this.callbacks.forEach((callback) => {
       try {
         callback(location);
       } catch (error) {
@@ -325,9 +339,10 @@ class DemoLocationService {
 export const demoLocationService = new DemoLocationService();
 
 // Global demo controls for browser console
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   (window as any).demoLocation = {
-    start: (route?: string, speed = 1) => demoLocationService.startDemo(route, speed),
+    start: (route?: string, speed = 1) =>
+      demoLocationService.startDemo(route, speed),
     stop: () => demoLocationService.stopDemo(),
     routes: () => demoLocationService.getAvailableRoutes(),
     speed: (speed: number) => demoLocationService.setSpeed(speed),
@@ -335,7 +350,7 @@ if (typeof window !== 'undefined') {
     status: () => ({
       active: demoLocationService.isActive(),
       route: demoLocationService.getCurrentRoute()?.name,
-      progress: demoLocationService.getProgress()
-    })
+      progress: demoLocationService.getProgress(),
+    }),
   };
 }
