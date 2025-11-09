@@ -1,57 +1,57 @@
-name: Frontend CI/CD
+# name: Frontend CI/CD
 
-on:
-  push:
-    branches:
-      - main # deploy when pushing to main
+# on:
+#   push:
+#     branches:
+#       - main # deploy when pushing to main
 
-jobs:
-  build-and-deploy:
-    name: Build & Deploy Frontend
-    runs-on: ubuntu-latest
+# jobs:
+#   build-and-deploy:
+#     name: Build & Deploy Frontend
+#     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: frontend # run in frontend folder
+#     defaults:
+#       run:
+#         working-directory: frontend # run in frontend folder
 
-    steps:
-      # 1. Checkout repo
-      - name: Checkout repository
-        uses: actions/checkout@v4
+#     steps:
+#       # 1. Checkout repo
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
-      # 2. Set up Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: package-lock.json
+#       # 2. Set up Node.js
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: "22"
+#           cache: "npm"
+#           cache-dependency-path: package-lock.json
 
-      # 3. Install dependencies
-      - name: Install dependencies
-        run: npm ci
+#       # 3. Install dependencies
+#       - name: Install dependencies
+#         run: npm ci
 
-      # 4. Build project
-      - name: Build project
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
-          VITE_GOOGLE_MAPS_ID: ${{ secrets.VITE_GOOGLE_MAPS_ID }}
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
-        run: npm run build
+#       # 4. Build project
+#       - name: Build project
+#         env:
+#           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+#           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+#           VITE_GOOGLE_MAPS_ID: ${{ secrets.VITE_GOOGLE_MAPS_ID }}
+#           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+#           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+#           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+#           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+#           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+#           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+#           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+#         run: npm run build
 
-      # 6. Deploy via FTP
-      - name: Deploy to FTP server
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.REACT_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ${{ secrets.PROTOCOL }}
-          local-dir: frontend/dist/
+#       # 6. Deploy via FTP
+#       - name: Deploy to FTP server
+#         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+#         with:
+#           server: ${{ secrets.REACT_SERVER }}
+#           username: ${{ secrets.FTP_USERNAME }}
+#           password: ${{ secrets.FTP_PASSWORD }}
+#           protocol: ${{ secrets.PROTOCOL }}
+#           local-dir: frontend/dist/
