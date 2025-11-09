@@ -53,6 +53,7 @@ jobs:
           server: ${{ secrets.FTP_BACKEND_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT || 22 }}
           protocol: ${{ secrets.FTP_PROTOCOL }}
           local-dir: backend/
           server-dir: /backend/
