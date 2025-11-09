@@ -53,10 +53,10 @@ jobs:
           server: ${{ secrets.FTP_BACKEND_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.FTP_PORT || 22 }}
+          port: ${{ secrets.FTP_PORT || 21 }}
           protocol: ${{ secrets.FTP_PROTOCOL }}
           local-dir: backend/
-          server-dir: /backend/
+          server-dir: /open-pothole-map.online/backend/
           exclude: |
             **/.git*
             **/.git*/**
@@ -76,9 +76,11 @@ jobs:
           password: ${{ secrets.BACKEND_SERVER_PASSWORD }}
           port: ${{ secrets.BACKEND_SERVER_PORT || 22 }}
           script: |
-            cd /var/www/backend
+            cd ~/open-pothole-map.online/backend
+            export PATH=$PATH:~/.npm-global/bin:~/node_modules/.bin
             pm2 restart pothole-backend || pm2 start dist/server.js --name pothole-backend
             pm2 save
+            pm2 list
 
       # 8. Notify deployment status
       - name: Deployment Status
