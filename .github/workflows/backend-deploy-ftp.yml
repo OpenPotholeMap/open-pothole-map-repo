@@ -115,30 +115,70 @@ jobs:
           password: ${{ secrets.BACKEND_SERVER_PASSWORD }}
           port: ${{ secrets.BACKEND_SERVER_PORT || 22 }}
           script: |
+            set -e  # Exit on error
             cd ~/open-pothole-map.online/backend
+            
+            echo "📂 Current directory:"
+            pwd
+            
+            echo "📄 Files in backend directory:"
+            ls -la
+            
+            echo "🔍 Checking for required files:"
+            if [ -f "package.json" ]; then
+              echo "✅ package.json found"
+            else
+              echo "❌ package.json NOT found!"
+              exit 1
+            fi
+            
+            if [ -f "package-lock.json" ]; then
+              echo "✅ package-lock.json found"
+            else
+              echo "❌ package-lock.json NOT found!"
+              exit 1
+            fi
+            
             source ~/.bashrc 2>/dev/null || true
             source ~/.bash_profile 2>/dev/null || true
             export PATH=$PATH:~/.npm-global/bin:~/node_modules/.bin:/usr/local/bin:/opt/cpanel/composer/bin
             
             echo "🔍 Checking Node.js and npm..."
-            which node
-            which npm
-            node --version
-            npm --version
+            which node || echo "node not found in PATH"
+            which npm || echo "npm not found in PATH"
+            node --version || echo "node command failed"
+            npm --version || echo "npm command failed"
             
             echo "📦 Installing production dependencies..."
-            npm ci --production --legacy-peer-deps
+            npm ci --production --legacy-peer-deps 2>&1 | tee npm-install.log
             
             echo "✅ Dependencies installed"
-            ls -la node_modules | head -10
+            echo "📊 Installed packages count:"
+            ls -1 node_modules | wc -l
             
-            echo "🔄 Restarting application..."
-            which pm2 || npm install -g pm2
-            pm2 restart pothole-backend || pm2 start dist/server.js --name pothole-backend
+            echo "🔍 Checking for cors package:"
+            if [ -d "node_modules/cors" ]; then
+              echo "✅ cors package found"
+            else
+              echo "❌ cors package NOT found!"
+              ls node_modules | head -20
+              exit 1
+            fi
+            
+            echo "🔄 Stopping old processes..."
+            pm2 stop pothole-backend 2>/dev/null || echo "No existing process to stop"
+            pm2 delete pothole-backend 2>/dev/null || echo "No existing process to delete"
+            
+            echo "🚀 Starting application..."
+            pm2 start dist/server.js --name pothole-backend
             pm2 save
             pm2 list
             
-            echo "✅ Application restarted successfully"
+            echo "📋 Checking application logs..."
+            sleep 2
+            pm2 logs pothole-backend --lines 20 --nostream
+            
+            echo "✅ Deployment completed successfully"
 
       # 9. Deployment Status
       - name: Deployment Status
