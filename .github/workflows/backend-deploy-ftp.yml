@@ -15,10 +15,6 @@ jobs:
     name: Build & Deploy Backend via FTP
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: backend
-
     steps:
       # 1. Checkout repository
       - name: Checkout repository
@@ -30,26 +26,36 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: package-lock.json
 
-      # 3. Install dependencies
-      - name: Install dependencies
+      # 3. Install root dependencies (sets up workspace)
+      - name: Install root dependencies
         run: |
-          echo "Installing dependencies..."
+          echo "Installing root workspace dependencies..."
           npm ci
-          echo "✅ Dependencies installed"
+          echo "✅ Root dependencies installed"
+
+      # 4. Install backend dependencies
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          echo "Installing backend dependencies..."
+          npm ci
+          echo "✅ Backend dependencies installed"
           ls -la node_modules | head -20
 
-      # 4. Build TypeScript project
-      - name: Build project
+      # 5. Build TypeScript project
+      - name: Build backend
+        working-directory: backend
         run: |
           echo "Building TypeScript..."
           npm run build
           echo "✅ Build complete"
           ls -la dist/
 
-      # 5. Install production dependencies only
+      # 6. Install production dependencies only
       - name: Install production dependencies
+        working-directory: backend
         run: |
           echo "Removing dev dependencies..."
           rm -rf node_modules
@@ -58,8 +64,9 @@ jobs:
           echo "✅ Production dependencies installed"
           ls -la node_modules | head -20
 
-      # 5b. Debug - List files to upload
+      # 6b. Debug - List files to upload
       - name: List files to upload
+        working-directory: backend
         run: |
           echo "=== PWD ==="
           pwd
@@ -69,12 +76,8 @@ jobs:
           ls -la dist/ || echo "dist/ not found!"
           echo "=== node_modules exists? ==="
           ls -d node_modules || echo "node_modules not found!"
-          echo "=== From repo root ==="
-          cd ..
-          pwd
-          ls -la backend/ | head -20
 
-      # 6. Deploy via FTP
+      # 7. Deploy via FTP
       - name: Deploy to FTP server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -83,7 +86,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT || 21 }}
           protocol: ${{ secrets.FTP_PROTOCOL }}
-          local-dir: backend/
+          local-dir: ./backend/
           server-dir: ./backend/
           # Override default excludes - we NEED node_modules and dist
           exclude: |
@@ -98,7 +101,7 @@ jobs:
             **/eslint.config.js
             **/tsconfig.build.json
 
-      # 7. Restart application via SSH
+      # 8. Restart application via SSH
       - name: Restart application
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -118,7 +121,7 @@ jobs:
             pm2 save
             pm2 list
 
-      # 8. Notify deployment status
+      # 9. Deployment Status
       - name: Deployment Status
         run: |
           if [ $? -eq 0 ]; then
