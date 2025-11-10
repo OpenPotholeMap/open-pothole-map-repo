@@ -7,9 +7,7 @@ import {
   GOOGLE_CLOUD_BUCKET,
 } from "@/config/envs";
 import { createServer } from "http";
-import https from "https";
 import { SocketService } from "@/services/socketService";
-import fs from "fs";
 
 // Startup logs for debugging
 console.log("🚀 Starting OpenPotholeMap Backend Server...");
@@ -30,12 +28,7 @@ async function startServer() {
     await connectDB();
     console.log("✅ Database connected successfully");
 
-    const options = {
-      key: fs.readFileSync("C:/Windows/System32/cert.key"),
-      cert: fs.readFileSync("C:/Windows/System32/cert.crt"),
-    };
-
-    // Create HTTP server
+    // Create HTTP server (HTTPS handled by reverse proxy in production)
     const server = createServer(app);
 
     // Initialize Socket.io
@@ -52,14 +45,9 @@ async function startServer() {
       }
     }, 30000);
 
-    // Start server with HTTPS
-    const httpsServer = https.createServer(options, app);
-
-    // Initialize Socket.io with HTTPS server
-    const socketService2 = new SocketService(httpsServer);
-
-    httpsServer.listen(parseInt(PORT), "0.0.0.0", () => {
-      console.log(`🎯 HTTPS Server running on https://0.0.0.0:${PORT}`);
+    // Start HTTP server (use reverse proxy for HTTPS in production)
+    server.listen(parseInt(PORT), "0.0.0.0", () => {
+      console.log(`🎯 HTTP Server running on http://0.0.0.0:${PORT}`);
       console.log(`🔗 Socket.io server ready for connections`);
       console.log(
         `📡 Ready to receive camera frames and process pothole detection`
