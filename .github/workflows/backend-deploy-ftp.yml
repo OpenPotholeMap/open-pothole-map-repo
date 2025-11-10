@@ -62,10 +62,10 @@ jobs:
             **/.git*/**
             **/node_modules/.cache/**
             **/.DS_Store
-            **/src/**
-            **/tsconfig*.json
-            **/.env
-            **/.env.example
+            src/
+            tsconfig*.json
+            .env.example
+            *.md
 
       # 7. Restart application via SSH
       - name: Restart application
