@@ -49,12 +49,18 @@ jobs:
       # 5b. Debug - List files to upload
       - name: List files to upload
         run: |
-          echo "=== Files in backend/ folder ==="
+          echo "=== PWD ==="
+          pwd
+          echo "=== Files in current directory (backend/) ==="
           ls -la
           echo "=== Files in dist/ folder ==="
           ls -la dist/ || echo "dist/ not found!"
           echo "=== node_modules exists? ==="
           ls -d node_modules || echo "node_modules not found!"
+          echo "=== From repo root ==="
+          cd ..
+          pwd
+          ls -la backend/ | head -20
 
       # 6. Deploy via FTP
       - name: Deploy to FTP server
