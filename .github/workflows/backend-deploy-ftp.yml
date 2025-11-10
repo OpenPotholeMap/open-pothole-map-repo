@@ -56,7 +56,7 @@ jobs:
           port: ${{ secrets.FTP_PORT || 21 }}
           protocol: ${{ secrets.FTP_PROTOCOL }}
           local-dir: backend/
-          server-dir: open-pothole-map.online/backend/
+          server-dir: ./backend/
           exclude: |
             **/.git*
             **/.git*/**
