@@ -34,17 +34,29 @@ jobs:
 
       # 3. Install dependencies
       - name: Install dependencies
-        run: npm ci
+        run: |
+          echo "Installing dependencies..."
+          npm ci
+          echo "✅ Dependencies installed"
+          ls -la node_modules | head -20
 
       # 4. Build TypeScript project
       - name: Build project
-        run: npm run build
+        run: |
+          echo "Building TypeScript..."
+          npm run build
+          echo "✅ Build complete"
+          ls -la dist/
 
       # 5. Install production dependencies only
       - name: Install production dependencies
         run: |
+          echo "Removing dev dependencies..."
           rm -rf node_modules
+          echo "Installing production dependencies..."
           npm ci --production
+          echo "✅ Production dependencies installed"
+          ls -la node_modules | head -20
 
       # 5b. Debug - List files to upload
       - name: List files to upload
