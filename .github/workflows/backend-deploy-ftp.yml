@@ -79,6 +79,14 @@ jobs:
           echo "=== node_modules exists? ==="
           ls -d node_modules || echo "node_modules not found!"
 
+      # 6c. Copy package-lock.json for server installation
+      - name: Copy package-lock.json to backend folder
+        run: |
+          echo "Copying package-lock.json to backend folder..."
+          cp package-lock.json backend/package-lock.json
+          echo "✅ package-lock.json copied"
+          ls -la backend/ | grep package
+
       # 7. Deploy via FTP (excluding node_modules - will install on server)
       - name: Deploy to FTP server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -117,13 +125,13 @@ jobs:
           script: |
             set -e  # Exit on error
             cd ~/open-pothole-map.online/backend
-            
+
             echo "📂 Current directory:"
             pwd
-            
+
             echo "📄 Files in backend directory:"
             ls -la
-            
+
             echo "🔍 Checking for required files:"
             if [ -f "package.json" ]; then
               echo "✅ package.json found"
@@ -131,31 +139,31 @@ jobs:
               echo "❌ package.json NOT found!"
               exit 1
             fi
-            
+
             if [ -f "package-lock.json" ]; then
               echo "✅ package-lock.json found"
             else
               echo "❌ package-lock.json NOT found!"
               exit 1
             fi
-            
+
             source ~/.bashrc 2>/dev/null || true
             source ~/.bash_profile 2>/dev/null || true
             export PATH=$PATH:~/.npm-global/bin:~/node_modules/.bin:/usr/local/bin:/opt/cpanel/composer/bin
-            
+
             echo "🔍 Checking Node.js and npm..."
             which node || echo "node not found in PATH"
             which npm || echo "npm not found in PATH"
             node --version || echo "node command failed"
             npm --version || echo "npm command failed"
-            
+
             echo "📦 Installing production dependencies..."
             npm ci --production --legacy-peer-deps 2>&1 | tee npm-install.log
-            
+
             echo "✅ Dependencies installed"
             echo "📊 Installed packages count:"
             ls -1 node_modules | wc -l
-            
+
             echo "🔍 Checking for cors package:"
             if [ -d "node_modules/cors" ]; then
               echo "✅ cors package found"
@@ -164,20 +172,20 @@ jobs:
               ls node_modules | head -20
               exit 1
             fi
-            
+
             echo "🔄 Stopping old processes..."
             pm2 stop pothole-backend 2>/dev/null || echo "No existing process to stop"
             pm2 delete pothole-backend 2>/dev/null || echo "No existing process to delete"
-            
+
             echo "🚀 Starting application..."
             pm2 start dist/server.js --name pothole-backend
             pm2 save
             pm2 list
-            
+
             echo "📋 Checking application logs..."
             sleep 2
             pm2 logs pothole-backend --lines 20 --nostream
-            
+
             echo "✅ Deployment completed successfully"
 
       # 9. Deployment Status
