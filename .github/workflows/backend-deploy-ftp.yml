@@ -46,6 +46,16 @@ jobs:
           rm -rf node_modules
           npm ci --production
 
+      # 5b. Debug - List files to upload
+      - name: List files to upload
+        run: |
+          echo "=== Files in backend/ folder ==="
+          ls -la
+          echo "=== Files in dist/ folder ==="
+          ls -la dist/ || echo "dist/ not found!"
+          echo "=== node_modules exists? ==="
+          ls -d node_modules || echo "node_modules not found!"
+
       # 6. Deploy via FTP
       - name: Deploy to FTP server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -57,10 +67,10 @@ jobs:
           protocol: ${{ secrets.FTP_PROTOCOL }}
           local-dir: backend/
           server-dir: ./backend/
+          # Override default excludes - we NEED node_modules and dist
           exclude: |
             **/.git*
             **/.git*/**
-            **/node_modules/.cache/**
             **/.DS_Store
             **/src/**
             **/tsconfig*.json
@@ -68,6 +78,7 @@ jobs:
             **/*.md
             **/test-frontend-socket.js
             **/eslint.config.js
+            **/tsconfig.build.json
 
       # 7. Restart application via SSH
       - name: Restart application
