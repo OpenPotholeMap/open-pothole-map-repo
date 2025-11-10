@@ -22,45 +22,56 @@ console.log(
 console.log(`📁 Roboflow Project: ${ROBOFLOW_PROJECT_ID || "NOT SET"}`);
 console.log(`☁️  GCS Bucket: ${GOOGLE_CLOUD_BUCKET || "NOT SET"}`);
 
-// Connect to database
-console.log("🔌 Connecting to database...");
-await connectDB();
-console.log("✅ Database connected successfully");
-
-const options = {
-  key: fs.readFileSync("C:/Windows/System32/cert.key"),
-  cert: fs.readFileSync("C:/Windows/System32/cert.crt"),
-};
-
-// Create HTTP server
-const server = createServer(app);
-
-// Initialize Socket.io
-console.log("🔗 Initializing Socket.io service...");
-const socketService = new SocketService(server);
-console.log("✅ Socket.io service initialized");
-
-// Optionally broadcast recent potholes every 30 seconds
-setInterval(async () => {
+// Main async function to handle startup
+async function startServer() {
   try {
-    await socketService.broadcastRecentPotholes();
+    // Connect to database
+    console.log("🔌 Connecting to database...");
+    await connectDB();
+    console.log("✅ Database connected successfully");
+
+    const options = {
+      key: fs.readFileSync("C:/Windows/System32/cert.key"),
+      cert: fs.readFileSync("C:/Windows/System32/cert.crt"),
+    };
+
+    // Create HTTP server
+    const server = createServer(app);
+
+    // Initialize Socket.io
+    console.log("🔗 Initializing Socket.io service...");
+    const socketService = new SocketService(server);
+    console.log("✅ Socket.io service initialized");
+
+    // Optionally broadcast recent potholes every 30 seconds
+    setInterval(async () => {
+      try {
+        await socketService.broadcastRecentPotholes();
+      } catch (error) {
+        console.error("Error broadcasting potholes:", error);
+      }
+    }, 30000);
+
+    // Start server with HTTPS
+    const httpsServer = https.createServer(options, app);
+
+    // Initialize Socket.io with HTTPS server
+    const socketService2 = new SocketService(httpsServer);
+
+    httpsServer.listen(parseInt(PORT), "0.0.0.0", () => {
+      console.log(`🎯 HTTPS Server running on https://0.0.0.0:${PORT}`);
+      console.log(`🔗 Socket.io server ready for connections`);
+      console.log(
+        `📡 Ready to receive camera frames and process pothole detection`
+      );
+      console.log(`🔍 Roboflow Universe integration ready`);
+      console.log("=====================================");
+    });
   } catch (error) {
-    console.error("Error broadcasting potholes:", error);
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
   }
-}, 30000);
+}
 
-// Start server with HTTPS
-const httpsServer = https.createServer(options, app);
-
-// Initialize Socket.io with HTTPS server
-const socketService2 = new SocketService(httpsServer);
-
-httpsServer.listen(parseInt(PORT), "0.0.0.0", () => {
-  console.log(`🎯 HTTPS Server running on https://0.0.0.0:${PORT}`);
-  console.log(`🔗 Socket.io server ready for connections`);
-  console.log(
-    `📡 Ready to receive camera frames and process pothole detection`
-  );
-  console.log(`🔍 Roboflow Universe integration ready`);
-  console.log("=====================================");
-});
+// Start the server
+startServer();
