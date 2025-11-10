@@ -35,12 +35,12 @@ jobs:
           npm ci
           echo "✅ Root dependencies installed"
 
-      # 4. Install backend dependencies
+      # 4. Install backend dependencies (standalone, not workspace)
       - name: Install backend dependencies
         working-directory: backend
         run: |
-          echo "Installing backend dependencies..."
-          npm ci
+          echo "Installing backend dependencies standalone..."
+          npm ci --legacy-peer-deps
           echo "✅ Backend dependencies installed"
           ls -la node_modules | head -20
 
@@ -59,10 +59,12 @@ jobs:
         run: |
           echo "Removing dev dependencies..."
           rm -rf node_modules
-          echo "Installing production dependencies..."
-          npm ci --production
+          echo "Installing production dependencies standalone..."
+          npm ci --production --legacy-peer-deps
           echo "✅ Production dependencies installed"
           ls -la node_modules | head -20
+          echo "=== Checking for cors package ==="
+          ls node_modules | grep cors || echo "cors not found!"
 
       # 6b. Debug - List files to upload
       - name: List files to upload
@@ -77,7 +79,7 @@ jobs:
           echo "=== node_modules exists? ==="
           ls -d node_modules || echo "node_modules not found!"
 
-      # 7. Deploy via FTP
+      # 7. Deploy via FTP (excluding node_modules - will install on server)
       - name: Deploy to FTP server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -88,11 +90,12 @@ jobs:
           protocol: ${{ secrets.FTP_PROTOCOL }}
           local-dir: ./backend/
           server-dir: ./backend/
-          # Override default excludes - we NEED node_modules and dist
+          # Exclude node_modules - we'll install on server via SSH
           exclude: |
             **/.git*
             **/.git*/**
             **/.DS_Store
+            **/node_modules/**
             **/src/**
             **/tsconfig*.json
             **/.env.example
@@ -100,9 +103,11 @@ jobs:
             **/test-frontend-socket.js
             **/eslint.config.js
             **/tsconfig.build.json
+            **/.gitignore
+            **/.npmrc
 
-      # 8. Restart application via SSH
-      - name: Restart application
+      # 8. Install dependencies and restart via SSH
+      - name: Install dependencies and restart application
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.BACKEND_SERVER_HOST }}
@@ -114,12 +119,26 @@ jobs:
             source ~/.bashrc 2>/dev/null || true
             source ~/.bash_profile 2>/dev/null || true
             export PATH=$PATH:~/.npm-global/bin:~/node_modules/.bin:/usr/local/bin:/opt/cpanel/composer/bin
+            
+            echo "🔍 Checking Node.js and npm..."
             which node
             which npm
+            node --version
+            npm --version
+            
+            echo "📦 Installing production dependencies..."
+            npm ci --production --legacy-peer-deps
+            
+            echo "✅ Dependencies installed"
+            ls -la node_modules | head -10
+            
+            echo "🔄 Restarting application..."
             which pm2 || npm install -g pm2
             pm2 restart pothole-backend || pm2 start dist/server.js --name pothole-backend
             pm2 save
             pm2 list
+            
+            echo "✅ Application restarted successfully"
 
       # 9. Deployment Status
       - name: Deployment Status
