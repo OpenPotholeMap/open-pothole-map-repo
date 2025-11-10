@@ -5,6 +5,9 @@
     "baseUrl": ".",
     "noEmit": false,
     "allowImportingTsExtensions": false,
+    "module": "ESNext",
+    "target": "ES2022",
+    "moduleResolution": "Bundler",
     "paths": {
       "@/*": ["src/*"]
     }
