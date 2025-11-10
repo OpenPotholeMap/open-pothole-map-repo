@@ -8,7 +8,7 @@ import {
 } from "@/config/envs";
 import { createServer } from "http";
 import https from "https";
-import { SocketService } from "@/services/socketService.js";
+import { SocketService } from "@/services/socketService";
 import fs from "fs";
 
 // Startup logs for debugging
