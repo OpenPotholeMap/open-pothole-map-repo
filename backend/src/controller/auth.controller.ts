@@ -67,7 +67,7 @@ export const AuthController = {
       throw new UnauthorizedError("Please login with Google", { email });
     }
 
-    const isPasswordValid = bcrypt.compare(
+    const isPasswordValid = await bcrypt.compare(
       password,
       user.encryptedPassword || ""
     );
@@ -168,48 +168,73 @@ export const AuthController = {
       .json({ message: "Logout successful" });
   },
   me: async (req: Request, res: Response) => {
-    try {
-      const token = req.cookies.access_token;
+    // Get token from authorization header or cookie
+    const authHeader = req.headers.authorization;
+    let token: string | undefined;
 
-      if (!token) {
-        res.status(401).json({
-          message: "Not authenticated",
-        });
-        return;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.substring(7);
+    } else {
+      // Try to parse from cookies (manually since cookie-parser is not used)
+      const anyReq = req as any;
+      const cookies = anyReq.cookies as Record<string, string> | undefined;
+      if (
+        cookies &&
+        typeof cookies === "object" &&
+        typeof cookies["access_token"] === "string"
+      ) {
+        token = cookies["access_token"];
+      } else {
+        const cookieHeader = req.headers["cookie"];
+        if (cookieHeader) {
+          const pairs = cookieHeader.split(/;\s*/);
+          for (const p of pairs) {
+            const idx = p.indexOf("=");
+            if (idx === -1) continue;
+            const key = p.substring(0, idx).trim();
+            const val = decodeURIComponent(p.substring(idx + 1));
+            if (key === "access_token") {
+              token = val;
+              break;
+            }
+          }
+        }
       }
-
-      const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
-      const user = await UserModel.findById(decoded.id);
-
-      if (!user) {
-        res.status(401).json({
-          message: "User not found",
-        });
-        return;
-      }
-
-      if (user.isActive === false) {
-        res.status(403).json({
-          message: "Account is deactivated",
-        });
-        return;
-      }
-
-      res.status(200).json({
-        message: "User retrieved successfully",
-        user: {
-          id: (user._id as any).toString(),
-          email: user.email,
-          username: user.username,
-          role: user.role,
-          avatarUrl: user.avatarUrl || "",
-        },
-      });
-    } catch (error) {
-      console.error("Get user error:", error);
-      res.status(401).json({
-        message: "Invalid token",
-      });
     }
+
+    if (!token) {
+      res.status(401).json({
+        message: "Not authenticated",
+      });
+      return;
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    const user = await UserModel.findById(decoded.id);
+
+    if (!user) {
+      res.status(401).json({
+        message: "User not found",
+      });
+      return;
+    }
+
+    if (user.isActive === false) {
+      res.status(403).json({
+        message: "Account is deactivated",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      message: "User retrieved successfully",
+      user: {
+        id: (user._id as any).toString(),
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        avatarUrl: user.avatarUrl || "",
+      },
+    });
   },
 };
