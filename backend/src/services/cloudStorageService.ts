@@ -39,18 +39,13 @@ class CloudStorageService {
    */
   async uploadImage(imageBuffer: Buffer, fileName: string): Promise<string> {
     try {
-      console.log(`☁️  Starting GCS upload for file: ${fileName}`);
-      console.log(`   Bucket: ${this.bucketName}`);
-      console.log(`   File size: ${imageBuffer.length} bytes`);
-
       const bucket = this.storage.bucket(this.bucketName);
       const file = bucket.file(`potholes/${fileName}`);
 
-      // Create a write stream to upload the buffer
       const stream = file.createWriteStream({
         metadata: {
           contentType: "image/jpeg",
-          cacheControl: "public, max-age=31536000", // This line cache the video for up to 1 year
+          cacheControl: "public, max-age=31536000",
         },
         resumable: false,
       });

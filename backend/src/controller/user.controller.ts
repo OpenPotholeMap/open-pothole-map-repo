@@ -6,6 +6,10 @@ const GetSchema = zod.object({
   userId: zod.string(),
 });
 
+const ParamsSchema = zod.object({
+  userId: zod.string().min(1),
+});
+
 const UpdateSchema = zod
   .object({
     username: zod.string().min(2).max(100).optional(),
@@ -18,7 +22,7 @@ const UpdateSchema = zod
 
 export const UserController = {
   getUser: async (req: Request, res: Response) => {
-    const { userId } = req.params as { userId: string };
+    const { userId } = ParamsSchema.parse(req.params);
     const user = await UserModel.findOne({
       _id: userId,
       isActive: true,
@@ -39,7 +43,7 @@ export const UserController = {
     });
   },
   updateUser: async (req: Request, res: Response) => {
-    const { userId } = req.params as { userId: string };
+    const { userId } = ParamsSchema.parse(req.params);
 
     const payload = UpdateSchema.parse(req.body);
 
@@ -66,7 +70,7 @@ export const UserController = {
     });
   },
   deleteUser: async (req: Request, res: Response) => {
-    const { userId } = req.params as { userId: string };
+    const { userId } = ParamsSchema.parse(req.params);
     const updated = await UserModel.findByIdAndUpdate(
       userId,
       { isActive: false, updatedAt: new Date() },

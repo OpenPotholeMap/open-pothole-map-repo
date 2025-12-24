@@ -54,9 +54,6 @@ class DetectionService {
 
   async processFrame(imageBuffer: Buffer): Promise<DetectionResult | null> {
     try {
-      console.log("🔍 Starting Roboflow detection...");
-
-      // Compress and resize image for faster processing
       const processedImage = await sharp(imageBuffer)
         .resize(640, 480, { fit: "inside", withoutEnlargement: true })
         .jpeg({ quality: 75 })
@@ -64,30 +61,22 @@ class DetectionService {
 
       console.log("Image processed: ${processedImage.length} bytes");
 
-      // Convert to base64 for Roboflow API
       const base64Image = processedImage.toString("base64");
       console.log(`Base64 image length: ${base64Image.length} characters`);
 
       const roboflowUrl = `https://detect.roboflow.com/${ROBOFLOW_PROJECT_ID}/${ROBOFLOW_MODEL_VERSION}`;
-
-      console.log("Roboflow API Request:");
-      console.log(`   URL: ${roboflowUrl}`);
-      console.log(`   API Key: ${ROBOFLOW_API_KEY.substring(0, 8)}...`);
-      console.log(`   Project ID: ${ROBOFLOW_PROJECT_ID}`);
-      console.log(`   Model Version: ${ROBOFLOW_MODEL_VERSION}`);
-      console.log(`Confidence Threshold: ${this.CONFIDENCE_THRESHOLD * 100}%`);
 
       const startTime = Date.now();
 
       const response = await axios.post(roboflowUrl, base64Image, {
         params: {
           api_key: ROBOFLOW_API_KEY,
-          confidence: this.CONFIDENCE_THRESHOLD * 100, // Roboflow expects percentage
+          confidence: this.CONFIDENCE_THRESHOLD * 100,
         },
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
-        timeout: 10000, // 10 second timeout
+        timeout: 10000,
       });
 
       const endTime = Date.now();
@@ -164,10 +153,9 @@ class DetectionService {
     longitude: number
   ): Promise<IPothole | null> {
     try {
-      // Use MongoDB geospatial query to find nearby potholes
       const nearbyPotholes = await PotholeModel.find({
         latitude: {
-          $gte: latitude - 0.0001, // ~11m at equator
+          $gte: latitude - 0.0001,
           $lte: latitude + 0.0001,
         },
         longitude: {
@@ -187,7 +175,6 @@ class DetectionService {
 
   async savePothole(detection: PotholeDetection): Promise<string | null> {
     try {
-      // Check for nearby potholes first
       const nearbyPothole = await this.findNearbyPothole(
         detection.latitude,
         detection.longitude
@@ -207,14 +194,10 @@ class DetectionService {
             detection.imageBuffer,
             fileName
           );
-          console.log(`✅ Additional image uploaded: ${newImageUrl}`);
         } catch (uploadError) {
-          console.error("Failed to upload additional image:", uploadError);
-          // Use placeholder if upload fails
           newImageUrl = `placeholder_${Date.now()}.jpg`;
         }
 
-        // Update existing pothole with new detection and add image to array
         const updatedPothole = await PotholeModel.findByIdAndUpdate(
           nearbyPothole._id,
           {
@@ -229,23 +212,9 @@ class DetectionService {
           },
           { new: true }
         );
-
-        console.log(`Updated existing pothole: ${updatedPothole?._id}`);
-        console.log(
-          `   New detection count: ${updatedPothole?.detectionCount}`
-        );
-        console.log(
-          `   Updated confidence: ${
-            (updatedPothole?.confidenceScore || 0) * 100
-          }%`
-        );
-        console.log("Added image: ${newImageUrl}");
-        console.log("Total images: ${updatedPothole?.images?.length || 0}");
         return updatedPothole?._id?.toString() || null;
       }
 
-      // Upload image to Google Cloud Storage
-      console.log("Uploading pothole image to Google Cloud Storage...");
       const fileName = cloudStorageService.generateFileName(
         detection.latitude,
         detection.longitude,
@@ -258,7 +227,6 @@ class DetectionService {
           detection.imageBuffer,
           fileName
         );
-        console.log(`✅ Image uploaded successfully: ${imageUrl}`);
       } catch (uploadError) {
         console.error(
           "Failed to upload image to GCS, using placeholder:",
@@ -279,10 +247,6 @@ class DetectionService {
       });
 
       const savedPothole = await pothole.save();
-      console.log(`New pothole saved to database: ${savedPothole._id}`);
-      console.log(`Location: ${detection.latitude}, ${detection.longitude}`);
-      console.log(`Confidence: ${(detection.confidence * 100).toFixed(1)}%`);
-      console.log(`Images: ${JSON.stringify([imageUrl])}`);
 
       return String(savedPothole._id);
     } catch (error) {

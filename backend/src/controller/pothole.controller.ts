@@ -1,41 +1,56 @@
 import { Request, Response } from "express";
 import { detectionService } from "@/services/detectionService.js";
 import { PotholeModel, ConfirmationModel, UserModel } from "@/models/index.js";
+import { z } from "zod";
+
+const CreatePotholeSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  confidenceScore: z.number().min(0).max(1).optional().default(0.5),
+  images: z.array(z.string()).optional().default([]),
+  verified: z.boolean().optional().default(false),
+  detectionCount: z.number().int().positive().optional().default(1),
+});
+
+const ListPotholesSchema = z.object({
+  limit: z
+    .string()
+    .optional()
+    .transform((val) => (val ? parseInt(val, 10) : 100)),
+});
+
+const ListInBoundsSchema = z.object({
+  north: z.string().transform((val) => parseFloat(val)),
+  south: z.string().transform((val) => parseFloat(val)),
+  east: z.string().transform((val) => parseFloat(val)),
+  west: z.string().transform((val) => parseFloat(val)),
+});
+
+const VerifyPotholeSchema = z.object({
+  verified: z.boolean(),
+});
+
+const ConfirmPotholeSchema = z.object({
+  status: z.enum(["still_there", "not_there"]),
+  userId: z.string(),
+});
+
+const AdminVerifySchema = z.object({
+  verified: z.boolean(),
+  userId: z.string(),
+});
 
 export const PotholeController = {
-  // Create a new pothole (manual creation)
   create: async (req: Request, res: Response) => {
     try {
       const {
         latitude,
         longitude,
-        confidenceScore = 0.5,
-        images = [],
-        verified = false,
-        detectionCount = 1,
-      } = req.body;
-
-      if (!latitude || !longitude) {
-        res.status(400).json({
-          message: "Latitude and longitude are required",
-        });
-        return;
-      }
-
-      // Validate coordinates
-      if (latitude < -90 || latitude > 90) {
-        res.status(400).json({
-          message: "Invalid latitude. Must be between -90 and 90",
-        });
-        return;
-      }
-
-      if (longitude < -180 || longitude > 180) {
-        res.status(400).json({
-          message: "Invalid longitude. Must be between -180 and 180",
-        });
-        return;
-      }
+        confidenceScore,
+        images,
+        verified,
+        detectionCount,
+      } = CreatePotholeSchema.parse(req.body);
 
       const newPothole = new PotholeModel({
         latitude,
@@ -64,10 +79,9 @@ export const PotholeController = {
     }
   },
 
-  // Get all potholes (for map display)
   list: async (req: Request, res: Response) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 100;
+      const { limit } = ListPotholesSchema.parse(req.query);
       const potholes = await detectionService.getRecentPotholes(limit);
 
       res.json({
@@ -86,23 +100,16 @@ export const PotholeController = {
   // Get potholes within a geographic bound (for map viewport)
   listInBounds: async (req: Request, res: Response) => {
     try {
-      const { north, south, east, west } = req.query as Record<string, string>;
-
-      if (!north || !south || !east || !west) {
-        res.status(400).json({
-          message: "Missing required parameters: north, south, east, west",
-        });
-        return;
-      }
+      const { north, south, east, west } = ListInBoundsSchema.parse(req.query);
 
       const potholes = await PotholeModel.find({
         latitude: {
-          $gte: parseFloat(south),
-          $lte: parseFloat(north),
+          $gte: south,
+          $lte: north,
         },
         longitude: {
-          $gte: parseFloat(west),
-          $lte: parseFloat(east),
+          $gte: west,
+          $lte: east,
         },
       })
         .select(
@@ -155,14 +162,7 @@ export const PotholeController = {
   // Update pothole verification status
   verify: async (req: Request, res: Response) => {
     try {
-      const { verified } = req.body as { verified?: boolean };
-
-      if (typeof verified !== "boolean") {
-        res.status(400).json({
-          message: "Verified field must be a boolean",
-        });
-        return;
-      }
+      const { verified } = VerifyPotholeSchema.parse(req.body);
 
       const pothole = await PotholeModel.findByIdAndUpdate(
         req.params.id,
@@ -217,24 +217,7 @@ export const PotholeController = {
   // Confirm pothole status (logged in users only)
   confirm: async (req: Request, res: Response) => {
     try {
-      const { status, userId } = req.body as {
-        status?: "still_there" | "not_there";
-        userId?: string;
-      };
-
-      if (!userId) {
-        res.status(401).json({
-          message: "User must be logged in to confirm pothole status",
-        });
-        return;
-      }
-
-      if (!status || !["still_there", "not_there"].includes(status)) {
-        res.status(400).json({
-          message: 'Status must be either "still_there" or "not_there"',
-        });
-        return;
-      }
+      const { status, userId } = ConfirmPotholeSchema.parse(req.body);
 
       // Check if pothole exists
       const pothole = await PotholeModel.findById(req.params.id);
@@ -324,17 +307,7 @@ export const PotholeController = {
   // Admin only: Verify pothole
   adminVerify: async (req: Request, res: Response) => {
     try {
-      const { verified, userId } = req.body as {
-        verified?: boolean;
-        userId?: string;
-      };
-
-      if (!userId) {
-        res.status(401).json({
-          message: "User must be logged in",
-        });
-        return;
-      }
+      const { verified, userId } = AdminVerifySchema.parse(req.body);
 
       // Check if user is admin
       const user = await UserModel.findById(userId);
@@ -348,13 +321,6 @@ export const PotholeController = {
       if (user.role !== "admin") {
         res.status(403).json({
           message: "Only admins can verify potholes",
-        });
-        return;
-      }
-
-      if (typeof verified !== "boolean") {
-        res.status(400).json({
-          message: "Verified field must be a boolean",
         });
         return;
       }
