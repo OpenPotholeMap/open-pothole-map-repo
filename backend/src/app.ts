@@ -11,7 +11,10 @@ const app = express();
 // Simple CORS setup
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: [
+      "https://open-pothole-map.xyz",
+      "https://www.open-pothole-map.xyz",
+    ],
     credentials: true,
   })
 );
