@@ -59,6 +59,10 @@ export const AuthController = {
       throw new UnauthorizedError("Invalid email or password", { email });
     }
 
+    if (user.isActive === false) {
+      throw new UnauthorizedError("Account is deactivated", { email });
+    }
+
     if (user.firebaseId && !user.encryptedPassword) {
       throw new UnauthorizedError("Please login with Google", { email });
     }
@@ -126,6 +130,9 @@ export const AuthController = {
           email,
         });
       }
+      if (user.isActive === false) {
+        throw new UnauthorizedError("Account is deactivated", { email });
+      }
     }
 
     const jwtToken = jwt.sign({ id: user._id }, JWT_SECRET, {
@@ -177,6 +184,13 @@ export const AuthController = {
       if (!user) {
         res.status(401).json({
           message: "User not found",
+        });
+        return;
+      }
+
+      if (user.isActive === false) {
+        res.status(403).json({
+          message: "Account is deactivated",
         });
         return;
       }
