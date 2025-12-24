@@ -13,41 +13,42 @@ export interface IDetectionSession extends Document {
 const DetectionSessionSchema = new mongoose.Schema<IDetectionSession>({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: false
+    ref: "User",
+    required: false,
   },
   startedAt: {
     type: Date,
     required: true,
-    default: Date.now
+    default: Date.now,
   },
   endedAt: {
     type: Date,
-    required: false
+    required: false,
   },
   totalDetections: {
     type: Number,
     default: 0,
-    min: 0
+    min: 0,
   },
   isActive: {
     type: Boolean,
-    default: true
+    default: true,
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
 });
 
-// Add index for active sessions
 DetectionSessionSchema.index({ isActive: 1, startedAt: -1 });
 
-// Add index for user sessions
 DetectionSessionSchema.index({ userId: 1, startedAt: -1 });
 
-export const DetectionSessionModel = mongoose.model<IDetectionSession>("DetectionSession", DetectionSessionSchema);
+export const DetectionSessionModel = mongoose.model<IDetectionSession>(
+  "DetectionSession",
+  DetectionSessionSchema
+);

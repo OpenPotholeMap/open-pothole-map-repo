@@ -1,8 +1,10 @@
 import cors from "cors";
 import express, { Request, Response } from "express";
-import { routeErrorHandler } from "./middleware/utils";
+import { routeErrorHandler } from "./utils/errors";
+import { attachUserFromToken } from "./middleware/auth.middleware";
 import routes from "./routes";
 import { CLIENT_URL } from "./config/envs";
+import morgan from "morgan";
 
 const app = express();
 
@@ -14,9 +16,12 @@ app.use(
   })
 );
 
-// Middleware
+app.use(morgan("dev"));
+
+// Global Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(attachUserFromToken);
 
 app.use("/api", routes);
 app.use(routeErrorHandler);
