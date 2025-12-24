@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/context/authContext";
+import { useAuth } from "@/context/auth";
 import axios from "axios";
 
 const LoginPage = () => {

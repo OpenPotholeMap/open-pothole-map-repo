@@ -21,10 +21,8 @@ class CloudStorageService {
 
     const credentials = JSON.parse(decoded);
 
-    // Fix private_key line breaks (important!)
     credentials.private_key = credentials.private_key.replace(/\\n/g, "\n");
 
-    // Initialize client using credentials object
     this.storage = new Storage({ credentials });
     this.bucketName = process.env.GOOGLE_CLOUD_BUCKET!;
   }
@@ -52,9 +50,9 @@ class CloudStorageService {
       const stream = file.createWriteStream({
         metadata: {
           contentType: "image/jpeg",
-          cacheControl: "public, max-age=31536000", // Cache for 1 year
+          cacheControl: "public, max-age=31536000", // This line cache the video for up to 1 year
         },
-        resumable: false, // Use simple upload for small files
+        resumable: false,
       });
 
       return new Promise((resolve, reject) => {
@@ -68,7 +66,7 @@ class CloudStorageService {
             // Generate a signed URL for public access (valid for 1 year)
             const [signedUrl] = await file.getSignedUrl({
               action: "read",
-              expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year from now
+              expires: Date.now() + 365 * 24 * 60 * 60 * 1000,
             });
 
             console.log(`✅ GCS upload successful!`);
@@ -81,7 +79,6 @@ class CloudStorageService {
           }
         });
 
-        // Write the buffer to the stream
         stream.end(imageBuffer);
       });
     } catch (error) {

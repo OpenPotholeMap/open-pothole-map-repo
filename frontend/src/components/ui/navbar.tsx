@@ -10,11 +10,10 @@ import {
   MenuItem,
 } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import { useAuth } from "@/context/authContext";
+import { useAuth } from "@/context/auth";
 import { isMobile } from "react-device-detect";
 
 const navigation = [
-
   { name: "Dashboard", href: "/" },
   { name: "Map", href: "/map" },
 ];
@@ -24,7 +23,6 @@ function classNames(...classes: string[]) {
 }
 
 export const Navbar = () => {
-
   const location = useLocation();
 
   if (isMobile) {
@@ -60,7 +58,6 @@ export const Navbar = () => {
                   className="h-8 w-auto cursor-pointer"
                 />
               </Link>
-
             </div>
             <div className="hidden sm:ml-6 sm:block">
               <div className="flex space-x-4">

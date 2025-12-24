@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/context/authContext";
+import { useAuth } from "@/context/auth";
 import { LoginWithGoogle } from "@/components/pages/auth/loginPage";
 import axios from "axios";
 

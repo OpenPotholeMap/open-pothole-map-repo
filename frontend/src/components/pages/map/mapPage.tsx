@@ -1,5 +1,5 @@
-import { useTheme } from "@/contexts/theme-context";
-import { useAuth } from "@/context/authContext";
+import { useTheme } from "@/context/theme";
+import { useAuth } from "@/context/auth";
 import {
   AdvancedMarker,
   Map,
