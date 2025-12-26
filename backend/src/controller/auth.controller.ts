@@ -168,14 +168,12 @@ export const AuthController = {
       .json({ message: "Logout successful" });
   },
   me: async (req: Request, res: Response) => {
-    // Get token from authorization header or cookie
     const authHeader = req.headers.authorization;
     let token: string | undefined;
 
     if (authHeader && authHeader.startsWith("Bearer ")) {
       token = authHeader.substring(7);
     } else {
-      // Try to parse from cookies (manually since cookie-parser is not used)
       const anyReq = req as any;
       const cookies = anyReq.cookies as Record<string, string> | undefined;
       if (

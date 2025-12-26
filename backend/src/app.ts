@@ -8,14 +8,18 @@ import morgan from "morgan";
 
 const app = express();
 
-// Simple CORS setup
 app.use(
   cors({
     origin: [
       "https://open-pothole-map.xyz",
       "https://www.open-pothole-map.xyz",
+      CLIENT_URL,
     ],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+    exposedHeaders: ["Set-Cookie"],
+    maxAge: 86400,
   })
 );
 

@@ -66,7 +66,9 @@ export const authenticate = async (
     }
     req.auth = { userId: decoded.id };
     req.user = { id: decoded.id, role: user.role };
-    (req.body as any).userId = decoded.id;
+    if (req.body) {
+      (req.body as any).userId = decoded.id;
+    }
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
@@ -87,7 +89,9 @@ export const attachUserFromToken = async (
     if (!user || user.isActive === false) return next();
     req.auth = { userId: decoded.id };
     req.user = { id: decoded.id, role: user.role };
-    (req.body as any).userId = decoded.id;
+    if (req.body) {
+      (req.body as any).userId = decoded.id;
+    }
     next();
   } catch {
     next();

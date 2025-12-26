@@ -5,16 +5,17 @@ declare global {
     demoLocation?: {
       start: (routeName?: string, speed?: number) => boolean;
       stop: () => void;
+      routes: () => string[];
+      speed: (speed: number) => void;
+      jump: (progress: number) => void;
       status: () => {
         active: boolean;
-        route: string | null;
-        speed: number;
+        route?: string;
         progress: number;
-        currentLocation: { lat: number; lng: number } | null;
-        reactComponent: boolean;
+        currentLocation?: { lat: number; lng: number };
       };
-      debug: () => void;
-      setLocation: (lat: number, lng: number) => void;
     };
   }
 }
+
+export {};
