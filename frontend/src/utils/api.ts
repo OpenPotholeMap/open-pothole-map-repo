@@ -1,6 +1,6 @@
 import axios from "axios";
+import { logger } from "./logger";
 
-// This will be set by the AuthProvider to allow clearing user state on auth failures
 let clearUserCallback: (() => void) | null = null;
 
 export const setAuthClearCallback = (callback: () => void) => {
@@ -20,7 +20,6 @@ interface RequestBaseArgs<T> {
   schema: { parse: (data: object) => T };
 }
 
-// Define an interface that defines 2 overloads for the request function
 interface IRequest {
   <T extends { data: object }>(
     args: RequestBaseArgs<T> & {
@@ -46,13 +45,12 @@ api.interceptors.response.use(
 
       if (status === 401) {
         try {
-          // Clear user state when we get a 401 error
           if (clearUserCallback) {
             clearUserCallback();
           }
           await api.post("/auth/logout", {}, { withCredentials: true });
         } catch (logoutErr) {
-          console.error("Logout failed", logoutErr);
+          logger.error("Logout failed", logoutErr);
         }
       }
     }

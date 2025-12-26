@@ -194,9 +194,12 @@ const MobileNavbar = () => {
 const ProfileDropdown = () => {
   const { user, logoutMutation } = useAuth();
 
-  const handleLogout = async () => {
-    await logoutMutation.mutate();
-    window.location.href = "/login";
+  const handleLogout = () => {
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        window.location.href = "/login";
+      },
+    });
   };
 
   return (
@@ -225,11 +228,11 @@ const ProfileDropdown = () => {
         {user ? (
           <>
             <MenuItem>
-              <a
-                href="#"
+              <Link
+                to="/profile"
                 className="block px-4 py-2 text-sm text-gray-300 data-focus:bg-white/5 data-focus:outline-hidden">
                 Your profile
-              </a>
+              </Link>
             </MenuItem>
             <MenuItem>
               <a

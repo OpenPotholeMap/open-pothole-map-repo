@@ -2,6 +2,7 @@
  * Demo Location Service
  * Provides smooth location simulation for demo purposes with interpolated movement
  */
+import { logger } from "@/utils/logger";
 
 export interface DemoLocation {
   lat: number;
@@ -85,7 +86,7 @@ class DemoLocationService {
    */
   startDemo(routeName?: string, speed: number = 1): boolean {
     if (this.isDemoMode) {
-      console.warn("Demo mode already active");
+      logger.warn("Demo mode already active");
       return false;
     }
 
@@ -94,7 +95,7 @@ class DemoLocationService {
       : this.routes[0];
 
     if (!route) {
-      console.error("Route not found:", routeName);
+      logger.error("Route not found:", routeName);
       return false;
     }
 
@@ -108,11 +109,11 @@ class DemoLocationService {
     this.currentLat = route.points[0].lat;
     this.currentLng = route.points[0].lng;
 
-    console.log(`🎬 Starting demo mode: ${route.name}`);
-    console.log(
+    logger.log(`🎬 Starting demo mode: ${route.name}`);
+    logger.log(
       `📍 ${route.points.length} waypoints, ${route.duration}s duration, ${speed}x speed`
     );
-    console.log(
+    logger.log(
       `🎯 Starting at: ${this.currentLat.toFixed(6)}, ${this.currentLng.toFixed(
         6
       )}`
@@ -133,7 +134,7 @@ class DemoLocationService {
 
     this.stopMovement();
 
-    console.log("🛑 Demo mode stopped");
+    logger.log("🛑 Demo mode stopped");
   }
 
   /**
@@ -202,7 +203,7 @@ class DemoLocationService {
    */
   setSpeed(speed: number): void {
     this.speed = Math.max(0.1, Math.min(10, speed)); // Clamp between 0.1x and 10x
-    console.log(`⚡ Demo speed changed to ${speed}x`);
+    logger.log(`⚡ Demo speed changed to ${speed}x`);
   }
 
   /**
@@ -221,7 +222,7 @@ class DemoLocationService {
     // Update current position
     this.updateCurrentPosition();
 
-    console.log(`🎯 Jumped to ${(progress * 100).toFixed(1)}% progress`);
+    logger.log(`🎯 Jumped to ${(progress * 100).toFixed(1)}% progress`);
 
     // Immediately notify of new location
     const location = this.getCurrentLocation();
@@ -246,7 +247,7 @@ class DemoLocationService {
 
       // Check if route completed
       if (this.getProgress() >= 1) {
-        console.log("🏁 Demo route completed, looping...");
+        logger.log("🏁 Demo route completed, looping...");
         this.startTime = Date.now(); // Reset for loop
       }
     }, this.updateInterval);
@@ -329,7 +330,7 @@ class DemoLocationService {
       try {
         callback(location);
       } catch (error) {
-        console.error("Error in demo location callback:", error);
+        logger.error("Error in demo location callback:", error);
       }
     });
   }
@@ -340,17 +341,23 @@ export const demoLocationService = new DemoLocationService();
 
 // Global demo controls for browser console
 if (typeof window !== "undefined") {
-  (window as any).demoLocation = {
+  window.demoLocation = {
     start: (route?: string, speed = 1) =>
       demoLocationService.startDemo(route, speed),
     stop: () => demoLocationService.stopDemo(),
     routes: () => demoLocationService.getAvailableRoutes(),
     speed: (speed: number) => demoLocationService.setSpeed(speed),
     jump: (progress: number) => demoLocationService.jumpToProgress(progress),
-    status: () => ({
-      active: demoLocationService.isActive(),
-      route: demoLocationService.getCurrentRoute()?.name,
-      progress: demoLocationService.getProgress(),
-    }),
-  };
+    status: () => {
+      const currentLoc = demoLocationService.getCurrentLocation();
+      return {
+        active: demoLocationService.isActive(),
+        route: demoLocationService.getCurrentRoute()?.name,
+        progress: demoLocationService.getProgress(),
+        currentLocation: currentLoc
+          ? { lat: currentLoc.lat, lng: currentLoc.lng }
+          : undefined,
+      };
+    },
+  } as NonNullable<typeof window.demoLocation>;
 }

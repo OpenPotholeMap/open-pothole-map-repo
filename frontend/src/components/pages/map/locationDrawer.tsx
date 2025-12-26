@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/command";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { logger } from "@/utils/logger";
 import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import usePlacesAutocomplete, {
   getGeocode,
@@ -144,7 +145,7 @@ const PlacesAutocomplete = ({
 
   useEffect(() => {
     if (selectedPlace) {
-      console.log("Selected place changed:", selectedPlace);
+      logger.log("Selected place changed:", selectedPlace);
       setInputValue(selectedPlace.address);
     }
   }, [selectedPlace]);
@@ -162,7 +163,7 @@ const PlacesAutocomplete = ({
     const result = await getGeocode({ placeId: place_id });
     const { lat, lng } = await getLatLng(result[0]);
 
-    console.log("Geocoded location:", { lat, lng, address });
+    logger.log("Geocoded location:", { lat, lng, address });
     setSelectedPlace({ lat, lng, address });
   };
 
