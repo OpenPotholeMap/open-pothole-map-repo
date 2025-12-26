@@ -2,10 +2,11 @@ import { useTheme } from "@/context/theme";
 import { useAuth } from "@/context/auth";
 import {
   AdvancedMarker,
-  Map,
+  Map as GoogleMap,
   useAdvancedMarkerRef,
   useMap,
 } from "@vis.gl/react-google-maps";
+import { logger } from "@/utils/logger";
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import LocationDrawer from "@/components/pages/map/locationDrawer";
@@ -81,72 +82,8 @@ const MapPage = () => {
   const toastCooldownRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    let watchId: number;
-    let timeoutId: NodeJS.Timeout;
-
-    const getCurrentPosition = () => {
-      // Try getCurrentPosition first for faster initial location
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          console.log("Got current position:", position.coords);
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-
-          // After getting initial position, start watching for updates
-          startWatching();
-        },
-        (error) => {
-          console.error("getCurrentPosition failed:", error);
-          // If getCurrentPosition fails, try watchPosition
-          startWatching();
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 8000,
-          maximumAge: 30000,
-        }
-      );
-    };
-
-    const startWatching = () => {
-      watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          console.log("Watch position update:", position.coords);
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error("Watch position error:", error, "Code:", error.code);
-
-          // Set fallback location after a timeout if no location is obtained
-          timeoutId = setTimeout(() => {
-            setUserLocation((prev) => {
-              if (!prev) {
-                console.log("Using fallback location");
-                return {
-                  lat: 37.7749, // Default to San Francisco
-                  lng: -122.4194,
-                };
-              }
-              return prev;
-            });
-          }, 2000);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 60000,
-        }
-      );
-    };
-
-    // Check if geolocation is available
     if (!navigator.geolocation) {
-      console.error("Geolocation is not supported by this browser");
+      logger.error("Geolocation is not supported");
       setUserLocation({
         lat: 37.7749,
         lng: -122.4194,
@@ -154,14 +91,37 @@ const MapPage = () => {
       return;
     }
 
-    getCurrentPosition();
+    let watchId: number | undefined;
+
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      (error) => {
+        logger.error("Geolocation error:", error);
+        setUserLocation((prev) => {
+          if (!prev) {
+            return {
+              lat: 37.7749,
+              lng: -122.4194,
+            };
+          }
+          return prev;
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 20000,
+      }
+    );
 
     return () => {
-      if (watchId) {
+      if (watchId !== undefined) {
         navigator.geolocation.clearWatch(watchId);
-      }
-      if (timeoutId) {
-        clearTimeout(timeoutId);
       }
     };
   }, []);
@@ -187,49 +147,10 @@ const MapPage = () => {
     const TOAST_COOLDOWN = 3000; // 3 seconds minimum between warnings for same pothole
     const TOAST_DURATION = 6000; // Toast stays visible for 6 seconds
 
-    // If no potholes are loaded, create some demo potholes for testing
-    let potholesToCheck = potholes;
-    if (potholes.length === 0) {
-      // Create demo potholes along the demo routes
-      potholesToCheck = [
-        {
-          _id: "demo-1",
-          latitude: 25.792,
-          longitude: -80.205,
-          confidenceScore: 0.85,
-          detectedAt: new Date().toISOString(),
-          verified: true,
-          detectionCount: 1,
-          images: [],
-        },
-        {
-          _id: "demo-2",
-          latitude: 25.81,
-          longitude: -80.205,
-          confidenceScore: 0.9,
-          detectedAt: new Date().toISOString(),
-          verified: true,
-          detectionCount: 1,
-          images: [],
-        },
-        {
-          _id: "demo-3",
-          latitude: 25.78,
-          longitude: -80.22,
-          confidenceScore: 0.88,
-          detectedAt: new Date().toISOString(),
-          verified: true,
-          detectionCount: 1,
-          images: [],
-        },
-      ];
-    }
-
     let closestPothole = null;
     let closestDistance = Infinity;
 
-    // Find the closest pothole within warning distance
-    for (const pothole of potholesToCheck) {
+    for (const pothole of potholes) {
       const distance = calculateDistance(
         userLocation.lat,
         userLocation.lng,
@@ -273,7 +194,7 @@ const MapPage = () => {
         now - lastWarningTime > TOAST_COOLDOWN;
 
       if (shouldShowWarning && !showPotholeWarning) {
-        console.log("⚠️ WARNING: Pothole detected!", {
+        logger.log("⚠️ WARNING: Pothole detected!", {
           distance: closestDistance,
           pothole: closestPothole._id,
           lastWarning: lastWarningTime,
@@ -328,14 +249,14 @@ const MapPage = () => {
     }
 
     setIsDriving(true);
-    console.log("🚗 Driving mode started", { isDemoMode, userLocation });
+    logger.log("🚗 Driving mode started", { isDemoMode, userLocation });
   };
 
   const handleStopDriving = () => {
     setIsDriving(false);
     setShowPotholeWarning(false);
     setUserBearing(0); // Reset bearing
-    console.log("Driving mode stopped");
+    logger.log("Driving mode stopped");
   };
 
   // Debounced function to fetch potholes within map bounds
@@ -353,9 +274,12 @@ const MapPage = () => {
         };
 
         const potholeData = await potholeService.getPotholesInBounds(boundsObj);
-        setPotholes(potholeData);
+        const uniquePotholes = Array.from(
+          new Map<string, Pothole>(potholeData.map((p) => [p._id, p])).values()
+        );
+        setPotholes(uniquePotholes);
       } catch (error) {
-        console.error("Failed to fetch potholes in bounds:", error);
+        logger.error("Failed to fetch potholes in bounds:", error);
       } finally {
         setIsLoadingPotholes(false);
       }
@@ -368,9 +292,13 @@ const MapPage = () => {
     const fetchInitialPotholes = async () => {
       try {
         const potholeData = await potholeService.getPotholes(100);
-        setPotholes(potholeData);
+        // Deduplicate by _id
+        const uniquePotholes = Array.from(
+          new Map<string, Pothole>(potholeData.map((p) => [p._id, p])).values()
+        );
+        setPotholes(uniquePotholes);
       } catch (error) {
-        console.error("Failed to fetch initial potholes:", error);
+        logger.error("Failed to fetch initial potholes:", error);
       }
     };
 
@@ -409,7 +337,7 @@ const MapPage = () => {
           });
         });
       } catch (error) {
-        console.error("Socket initialization error:", error);
+        logger.error("Socket initialization error:", error);
       }
     };
 
@@ -436,7 +364,7 @@ const MapPage = () => {
         );
       }
     } catch (error) {
-      console.error("Failed to update verification:", error);
+      logger.error("Failed to update verification:", error);
     }
   };
 
@@ -461,9 +389,8 @@ const MapPage = () => {
   return (
     <TooltipProvider>
       <main className="h-screen">
-        <Map
+        <GoogleMap
           mapId={mapId || undefined}
-          style={{ width: "100vw", height: "100vh" }}
           defaultCenter={userLocation}
           defaultZoom={17}
           gestureHandling={"greedy"}
@@ -493,11 +420,11 @@ const MapPage = () => {
               currentUser={user}
             />
           ))}
-        </Map>
+        </GoogleMap>
         <MapHandler
-          destination={selectedDestination}
           userlocation={userLocation}
           origin={selectedOrigin}
+          destination={selectedDestination}
           marker={marker}
           isDriving={isDriving}
           userBearing={userBearing}
