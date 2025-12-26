@@ -1,4 +1,5 @@
 import axios from "axios";
+import { logger } from "@/utils/logger";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -33,7 +34,11 @@ export interface ConfirmationSummary {
 class PotholeService {
   private apiClient = axios.create({
     baseURL: `${API_URL}/api`,
-    timeout: 10000,
+    timeout: 30000, // Increased for mobile networks
+    withCredentials: true, // Send cookies/credentials
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
 
   /**
@@ -44,10 +49,18 @@ class PotholeService {
       const response = await this.apiClient.get("/potholes", {
         params: { limit },
       });
-      console.log("Fetched potholes:", response.data.data);
       return response.data.data || [];
     } catch (error) {
-      console.error("Error fetching potholes:", error);
+      if (axios.isAxiosError(error)) {
+        logger.error("Error fetching potholes:", {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data,
+          url: error.config?.url,
+        });
+      } else {
+        logger.error("Error fetching potholes:", error);
+      }
       return [];
     }
   }
@@ -67,7 +80,15 @@ class PotholeService {
       });
       return response.data.data || [];
     } catch (error) {
-      console.error("Error fetching potholes in bounds:", error);
+      if (axios.isAxiosError(error)) {
+        logger.error("Error fetching potholes in bounds:", {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data,
+        });
+      } else {
+        logger.error("Error fetching potholes in bounds:", error);
+      }
       return [];
     }
   }
@@ -80,7 +101,7 @@ class PotholeService {
       const response = await this.apiClient.get(`/potholes/${id}`);
       return response.data.data;
     } catch (error) {
-      console.error("Error fetching pothole:", error);
+      logger.error("Error fetching pothole:", error);
       return null;
     }
   }
@@ -93,7 +114,7 @@ class PotholeService {
       await this.apiClient.patch(`/potholes/${id}/verify`, { verified });
       return true;
     } catch (error) {
-      console.error("Error updating verification:", error);
+      logger.error("Error updating verification:", error);
       return false;
     }
   }
@@ -113,7 +134,7 @@ class PotholeService {
       const response = await this.apiClient.post("/potholes", data);
       return response.data.data;
     } catch (error) {
-      console.error("Error creating pothole:", error);
+      logger.error("Error creating pothole:", error);
       return null;
     }
   }
@@ -130,7 +151,7 @@ class PotholeService {
       await this.apiClient.post(`/potholes/${id}/confirm`, { status, userId });
       return true;
     } catch (error) {
-      console.error("Error confirming pothole:", error);
+      logger.error("Error confirming pothole:", error);
       return false;
     }
   }
@@ -148,7 +169,7 @@ class PotholeService {
       );
       return response.data.data;
     } catch (error) {
-      console.error("Error fetching confirmations:", error);
+      logger.error("Error fetching confirmations:", error);
       return null;
     }
   }
@@ -168,7 +189,7 @@ class PotholeService {
       });
       return true;
     } catch (error) {
-      console.error("Error admin verifying pothole:", error);
+      logger.error("Error admin verifying pothole:", error);
       return false;
     }
   }

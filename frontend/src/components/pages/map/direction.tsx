@@ -1,5 +1,6 @@
 import { useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { useEffect, useState } from "react";
+import { logger } from "@/utils/logger";
 
 const Direction = ({
   origin,
@@ -68,7 +69,7 @@ const Direction = ({
         setRenderers(newRenderers);
       })
       .catch((error) => {
-        console.error("Directions request failed:", error);
+        logger.error("Directions request failed:", error);
       });
   }, [directionsService, origin, destination, map, selectedRouteIndex]);
 

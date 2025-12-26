@@ -5,6 +5,24 @@ import { Router } from "express";
 
 export const UserRoutes = Router();
 
+// Current user profile endpoints (must be before /:userId)
+UserRoutes.get("/me", authenticate, wrappedHandlers([UserController.getMe]));
+
+UserRoutes.put("/me", authenticate, wrappedHandlers([UserController.updateMe]));
+
+UserRoutes.put(
+  "/me/password",
+  authenticate,
+  wrappedHandlers([UserController.changePassword])
+);
+
+UserRoutes.get(
+  "/me/stats",
+  authenticate,
+  wrappedHandlers([UserController.getMyStats])
+);
+
+// Generic user endpoints
 UserRoutes.get("/:userId", wrappedHandlers([UserController.getUser]));
 
 UserRoutes.put(

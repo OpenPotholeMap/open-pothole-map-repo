@@ -1,4 +1,5 @@
 import { io, Socket } from "socket.io-client";
+import { logger } from "@/utils/logger";
 
 interface DetectionEvent {
   potholeId: string;
@@ -35,19 +36,19 @@ class SocketService {
       });
 
       this.socket.on("connect", () => {
-        console.log("Connected to server");
+        logger.log("Connected to server");
         this.isConnected = true;
         resolve();
       });
 
       this.socket.on("connect_error", (error) => {
-        console.error("Connection error:", error);
+        logger.error("Connection error:", error);
         this.isConnected = false;
         reject(error);
       });
 
       this.socket.on("disconnect", () => {
-        console.log("Disconnected from server");
+        logger.log("Disconnected from server");
         this.isConnected = false;
       });
     });
@@ -83,7 +84,7 @@ class SocketService {
 
   sendFrame(frame: string, location: { latitude: number; longitude: number }) {
     if (!this.socket || !this.isConnected) {
-      console.error("Cannot send frame: not connected");
+      logger.error("Cannot send frame: not connected");
       return;
     }
 

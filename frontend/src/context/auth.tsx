@@ -9,6 +9,12 @@ import {
 import zod from "zod";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/config/firebase";
+import { logger } from "@/utils/logger";
+import {
+  userService,
+  type UpdateProfilePayload,
+  type ChangePasswordPayload,
+} from "@/services/userService";
 
 const LoginResponseSchema = zod.object({
   message: zod.string(),
@@ -16,7 +22,7 @@ const LoginResponseSchema = zod.object({
     id: zod.string(),
     username: zod.string(),
     email: zod.string(),
-    role: zod.enum(['user', 'admin']).default('user'),
+    role: zod.enum(["user", "admin"]).default("user"),
     avatarUrl: zod.string().optional(),
   }),
 });
@@ -27,7 +33,7 @@ const SignUpResponseSchema = zod.object({
     id: zod.string(),
     username: zod.string(),
     email: zod.string(),
-    role: zod.enum(['user', 'admin']).default('user'),
+    role: zod.enum(["user", "admin"]).default("user"),
   }),
 });
 
@@ -40,14 +46,19 @@ type User = {
   id: string;
   email: string;
   username: string;
-  role: 'user' | 'admin';
+  role: "user" | "admin";
   avatarUrl?: string;
 };
 
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
-  logoutMutation: UseMutationResult<{ data: Record<string, never> }, Error, void, unknown>;
+  logoutMutation: UseMutationResult<
+    { data: Record<string, never> },
+    Error,
+    void,
+    unknown
+  >;
   googleLoginMutation: UseMutationResult<{ data: User }, Error, void, unknown>;
   loginMutation: UseMutationResult<
     { data: User },
@@ -59,6 +70,18 @@ type AuthContextType = {
     { data: User },
     Error,
     { email: string; password: string; username: string },
+    unknown
+  >;
+  updateProfileMutation: UseMutationResult<
+    User,
+    Error,
+    UpdateProfilePayload,
+    unknown
+  >;
+  changePasswordMutation: UseMutationResult<
+    void,
+    Error,
+    ChangePasswordPayload,
     unknown
   >;
 };
@@ -164,7 +187,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      console.log("Logging out...");
+      logger.log("Logging out...");
       const res = await request({
         method: "POST",
         url: "/auth/logout",
@@ -180,6 +203,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     },
   });
 
+  const updateProfileMutation = useMutation({
+    mutationFn: (payload: UpdateProfilePayload) =>
+      userService.updateProfile(payload),
+    onSuccess: (updatedUser) => {
+      logger.log("Profile updated successfully");
+      setUser(updatedUser);
+      queryClient.setQueryData(["user"], updatedUser);
+      queryClient.invalidateQueries({ queryKey: ["userStats"] });
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (payload: ChangePasswordPayload) =>
+      userService.changePassword(payload),
+    onSuccess: () => {
+      logger.log("Password changed successfully");
+    },
+  });
+
   return (
     <authContext.Provider
       value={{
@@ -189,6 +231,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signupMutation,
         logoutMutation,
         googleLoginMutation,
+        updateProfileMutation,
+        changePasswordMutation,
       }}>
       {children}
     </authContext.Provider>
